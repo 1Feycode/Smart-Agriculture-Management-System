@@ -1,0 +1,50 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Authentication/role helpers use the signed Firebase Auth token.
+    function signedIn() { return request.auth != null; }
+    function expert() { return signedIn() && request.auth.token.role == 'expert'; }
+    function admin() { return signedIn() && request.auth.token.role == 'admin'; }
+    // Reject path-like or unsafe characters in the final file name.
+    function safeName(name) {
+      return name.matches('^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$');
+    }
+    // Cross-check ownership and visibility against the related Firestore question.
+    function questionExists(questionId) {
+      return firestore.exists(/databases/(default)/documents/questions/$(questionId));
+    }
+    function question(questionId) {
+      return firestore.get(/databases/(default)/documents/questions/$(questionId)).data;
+    }
+    function canReadQuestionImage(questionId, ownerUid) {
+      return signedIn() && questionExists(questionId) && (
+        admin()
+        || request.auth.uid == ownerUid
+        || (expert() && (
+          question(questionId).assignedExpertUid == request.auth.uid
+          || question(questionId).status == 'submitted'
+          || question(questionId).status == 'underReview'
+        ))
+      );
+    }
+    // Farmers may create only small, supported images under their own question path.
+    // The owner, authorized expert and admin may read; overwrite/delete/list are denied.
+    match /questions/{questionId}/{ownerUid}/{fileName} {
+      allow create: if signedIn()
+        && request.auth.uid == ownerUid
+        && questionExists(questionId)
+        && question(questionId).ownerUid == request.auth.uid
+        && question(questionId).status == 'submitted'
+        && safeName(fileName)
+        && request.resource.size <= 2 * 1024 * 1024
+        && request.resource.contentType.matches('image/(jpeg|png|webp)');
+      allow get: if canReadQuestionImage(questionId, ownerUid);
+      allow list: if false;
+      allow update, delete: if false;
+    }
+    // Any object outside the approved question-image path is denied.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
