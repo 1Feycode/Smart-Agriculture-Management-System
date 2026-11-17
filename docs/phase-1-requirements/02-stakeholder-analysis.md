@@ -1,0 +1,23 @@
+# 02. Stakeholder Analysis
+
+This stakeholder analysis is derived from the SRS and should be validated with project stakeholders before detailed design and development begin.
+
+| Stakeholder | Type | Needs and expectations | Responsibilities | Level of influence | Level of interest | Communication needs | Potential concerns or risks |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Farmers | Primary | Simple access to reliable crop, soil, weather, fertilizer, and market information; ability to manage farms and seek expert advice. | Register and maintain profile; manage farm records; request recommendations; submit questions; access notifications. | High | High | Simple, mobile-friendly dashboards; alerts; guidance messages. | Low digital literacy, poor connectivity, unreliable local data quality. |
+| Agricultural experts | Primary | Access to organized farmer questions, validated guidance, and recommendation review workflows. | Review questions; provide answers; assess fertilizer recommendations; contribute agricultural knowledge. | High | High | Structured advisory workflows; question queues; review history. | High workload; inconsistent input quality from farmers; need for documented expertise. |
+| System administrators | Primary | Full system oversight, account management, content governance, reporting, and monitoring. | Manage users and permissions; manage crop, fertilizer, and public information; monitor activity; generate reports. | High | High | Administrative dashboard; activity logs; reporting; permission plans. | Unauthorized changes; permission drift; poor content quality control. |
+| Agricultural data managers | Primary | Accurate, traceable, and up-to-date agricultural market and field data. | Record and verify market prices; maintain source and date metadata; update agricultural information. | High | High | Structured validation workflows; audit trails; price review actions. | Unverified or inconsistent price submissions; delays in updates. |
+| Project supervisor | Secondary | Requirements quality, stakeholder alignment, scope control, and successful progression toward delivery. | Review requirements; approve scope; evaluate project progress; ensure requirements traceability. | High | Medium | Formal status reviews and requirements validation documents. | Changing requirements or unclear scope. |
+| Agricultural offices | Secondary | Access to organized agricultural information, useful reports, and improved communication with farmers. | Provide public agricultural information; support farmers with guidance and reporting. | Medium | Medium | Summary reports and curated agricultural information. | Data not aligned with local office processes or standards. |
+| Local markets | Secondary | Access to structured price information and consistent agricultural product records. | Provide commodity and price information; align product data with local market names and units. | Medium | Medium | Price submission and verification channels. | Inconsistent product naming and unit standards. |
+| Weather information providers | Secondary | Provide reliable weather data and forecasting services to the system. | Supply observations, forecasts, and alerts when available; support external API integration. | Medium | Medium | Periodic service updates and API status reports. | Service outages, incomplete data, and API limits. |
+| Farmers' associations | Secondary | Farmer awareness, adoption support, and improved access to verified agricultural services. | Promote system use; assist member education; help validate farmer needs. | Medium | Medium | Communication via meetings and training. | Low adoption if the system is not simple to use. |
+| Testers | Secondary | Validation of requirements, functionality, and user experience against the SRS. | Verify functional correctness, usability, and quality requirements; record defects and validation outcomes. | Medium | High | Test plans, acceptance criteria, and defect logs. | Incomplete requirements or poor traceability to core use cases. |
+
+## Additional stakeholder observations
+- Farmers are the primary service users and should be treated as the main beneficiary group for usability and information accessibility.
+- Agricultural experts and data managers are essential for ensuring information quality in fertilizer, weather, and market data.
+- Administrators are central to ensuring records, controls, and compliance with role-based access rules.
+- External weather providers and market actors may not be direct system users, but they are critical operational dependencies.
+- The project supervisor and testers help validate quality, traceability, and acceptance for the project baseline.
