@@ -1,0 +1,86 @@
+import {
+  Activity,
+  Bell,
+  BookOpen,
+  CloudSun,
+  Database,
+  FileText,
+  FlaskConical,
+  LayoutDashboard,
+  Leaf,
+  MapPin,
+  MessageCircleQuestion,
+  ShieldCheck,
+  Sprout,
+  Store,
+  Users,
+  type LucideIcon,
+} from 'lucide-react'
+
+export type DashboardRole = 'farmer' | 'expert' | 'data-manager' | 'administrator'
+
+export interface NavigationItem {
+  label: string
+  href: string
+  icon: LucideIcon
+}
+
+interface DashboardNavigation {
+  label: string
+  basePath: string
+  items: NavigationItem[]
+}
+
+export const dashboardNavigation: Record<DashboardRole, DashboardNavigation> = {
+  farmer: {
+    label: 'Farmer',
+    basePath: '/farmer',
+    items: [
+      { label: 'Overview', href: '/farmer', icon: LayoutDashboard },
+      { label: 'Farms', href: '/farmer/farms', icon: MapPin },
+      { label: 'Crop information', href: '/farmer/crops', icon: Leaf },
+      { label: 'Soil tests', href: '/farmer/soil-tests', icon: FlaskConical },
+      { label: 'Recommendations', href: '/farmer/recommendations', icon: Sprout },
+      { label: 'Questions', href: '/farmer/questions', icon: MessageCircleQuestion },
+      { label: 'Weather', href: '/farmer/weather', icon: CloudSun },
+      { label: 'Market prices', href: '/farmer/markets/prices', icon: Store },
+      { label: 'Notifications', href: '/farmer/notifications', icon: Bell },
+    ],
+  },
+  expert: {
+    label: 'Agricultural Expert',
+    basePath: '/expert',
+    items: [
+      { label: 'Overview', href: '/expert', icon: LayoutDashboard },
+      { label: 'Question inbox', href: '/expert/questions', icon: MessageCircleQuestion },
+      { label: 'Recommendations', href: '/expert/recommendations', icon: Sprout },
+      { label: 'Soil records', href: '/expert/soil-tests', icon: FlaskConical },
+      { label: 'Notifications', href: '/expert/notifications', icon: Bell },
+    ],
+  },
+  'data-manager': {
+    label: 'Agricultural Data Manager',
+    basePath: '/data',
+    items: [
+      { label: 'Overview', href: '/data', icon: LayoutDashboard },
+      { label: 'Markets', href: '/data/markets', icon: Store },
+      { label: 'Products', href: '/data/products', icon: Sprout },
+      { label: 'Market prices', href: '/data/prices', icon: Database },
+      { label: 'Reports', href: '/data/reports', icon: FileText },
+    ],
+  },
+  administrator: {
+    label: 'Administrator',
+    basePath: '/admin',
+    items: [
+      { label: 'Overview', href: '/admin', icon: LayoutDashboard },
+      { label: 'Users', href: '/admin/users', icon: Users },
+      { label: 'Crop information', href: '/admin/crops', icon: Leaf },
+      { label: 'Fertilizers', href: '/admin/fertilizers', icon: Sprout },
+      { label: 'Public content', href: '/admin/content', icon: BookOpen },
+      { label: 'Activity log', href: '/admin/activity', icon: Activity },
+      { label: 'Reports', href: '/admin/reports', icon: FileText },
+      { label: 'System access', href: '/admin/access', icon: ShieldCheck },
+    ],
+  },
+}
