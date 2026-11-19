@@ -55,4 +55,4 @@
 
 ## Next phase
 
-Proceed to **Phase 3: Firebase and React setup** only after approvals above, receipt of the SRS, role/data-policy decisions, and successful Rules emulator tests. Set up isolated Firebase projects, React structure, environment placeholders, indexes and test harness before entering production data.
+The next implementation stage is **Phase 3: Farmer and Farm Management**. Implement the approved profile-location and owner-scoped farm workflows, update Firestore Rules and indexes, and pass emulator tests before deploying the changes.

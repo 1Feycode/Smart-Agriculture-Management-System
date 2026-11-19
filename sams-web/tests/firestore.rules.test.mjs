@@ -4,13 +4,18 @@ import { after, test } from 'node:test'
 import { assertFails, assertSucceeds, initializeTestEnvironment } from '@firebase/rules-unit-testing'
 import {
   collection,
+  deleteDoc,
   doc,
   getDoc,
+  getCountFromServer,
   getDocs,
+  orderBy,
+  query,
   runTransaction,
   serverTimestamp,
   setDoc,
   updateDoc,
+  where,
 } from 'firebase/firestore'
 
 const testEnvironment = await initializeTestEnvironment({
@@ -27,12 +32,18 @@ after(async () => {
 test('farmers self-register and only superadmins can manage user roles and status', async () => {
   const farmerDb = testEnvironment.authenticatedContext('farmer-1', {
     email: 'farmer@example.test',
+    email_verified: true,
   }).firestore()
   const otherFarmerDb = testEnvironment.authenticatedContext('farmer-2', {
     email: 'other@example.test',
+    email_verified: true,
   }).firestore()
   const noRoleDb = testEnvironment.authenticatedContext('farmer-3', {
     email: 'third@example.test',
+    email_verified: true,
+  }).firestore()
+  const unverifiedFarmerDb = testEnvironment.authenticatedContext('farmer-4', {
+    email: 'unverified@example.test',
   }).firestore()
   const anonymousDb = testEnvironment.unauthenticatedContext().firestore()
   const superadminDb = testEnvironment.authenticatedContext('superadmin-1', {
@@ -60,9 +71,20 @@ test('farmers self-register and only superadmins can manage user roles and statu
   await assertFails(getDoc(doc(noRoleDb, 'users/farmer-1')))
   await assertFails(getDocs(collection(farmerDb, 'users')))
   await assertFails(getDoc(doc(farmerDb, 'farms/farm-1')))
+  await assertFails(setDoc(doc(unverifiedFarmerDb, 'farms/unverified-farm'), {
+    ownerUid: 'farmer-4',
+    name: 'Unverified Farm',
+    location: { region: 'Ashanti', district: 'Kumasi', community: 'Bantama' },
+    size: 1,
+    sizeUnit: 'acre',
+    status: 'active',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }))
 
   await assertSucceeds(updateDoc(profileRef, {
     displayName: 'Amina Updated',
+    location: { region: 'Ashanti', district: 'Kumasi', community: 'Bantama' },
     updatedAt: serverTimestamp(),
   }))
   await assertFails(updateDoc(profileRef, {
@@ -78,7 +100,7 @@ test('farmers self-register and only superadmins can manage user roles and statu
     updatedAt: serverTimestamp(),
   }))
   await assertFails(updateDoc(profileRef, {
-    location: { region: 'Unapproved field shape' },
+    location: { region: 'Ashanti' },
     updatedAt: serverTimestamp(),
   }))
   await assertFails(setDoc(doc(farmerDb, 'users/farmer-admin'), {
@@ -95,6 +117,153 @@ test('farmers self-register and only superadmins can manage user roles and statu
     displayName: 'No Role',
     email: 'third@example.test',
     role: 'farmer',
+    status: 'active',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }))
+  await testEnvironment.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), 'users/farmer-2'), {
+      uid: 'farmer-2',
+      displayName: 'Other Farmer',
+      email: 'other@example.test',
+      role: 'farmer',
+      status: 'active',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    })
+  })
+
+  const farmRef = doc(farmerDb, 'farms/farm-1')
+  await assertSucceeds(setDoc(farmRef, {
+    ownerUid: 'farmer-1',
+    name: 'North Plot',
+    location: { region: 'Ashanti', district: 'Kumasi', community: 'Bantama' },
+    size: 2.5,
+    sizeUnit: 'hectare',
+    status: 'active',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }))
+  await assertSucceeds(getDoc(farmRef))
+  await testEnvironment.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), 'farms/farm-other'), {
+      ownerUid: 'farmer-2',
+      name: 'Other Farmer Farm',
+      location: { region: 'Ashanti', district: 'Kumasi', community: 'Bantama' },
+      size: 1,
+      sizeUnit: 'acre',
+      status: 'active',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    })
+  })
+  await assertSucceeds(getDocs(query(
+    collection(farmerDb, 'farms'),
+    where('ownerUid', '==', 'farmer-1'),
+    where('status', '==', 'active'),
+    orderBy('updatedAt', 'desc'),
+  )))
+  const activeFarmCount = await getCountFromServer(query(
+    collection(farmerDb, 'farms'),
+    where('ownerUid', '==', 'farmer-1'),
+    where('status', '==', 'active'),
+  ))
+  assert.equal(activeFarmCount.data().count, 1)
+  await assertFails(getDocs(collection(farmerDb, 'farms')))
+  await assertFails(getDoc(doc(otherFarmerDb, 'farms/farm-1')))
+  await assertFails(getDoc(doc(farmerDb, 'farms/farm-other')))
+  await assertFails(updateDoc(doc(farmerDb, 'farms/farm-other'), {
+    name: 'Changed by another farmer',
+    updatedAt: serverTimestamp(),
+  }))
+  await assertFails(setDoc(doc(farmerDb, 'farms/farm-spoof'), {
+    ownerUid: 'farmer-2',
+    name: 'Spoofed Farm',
+    location: { region: 'Ashanti', district: 'Kumasi', community: 'Bantama' },
+    size: 1,
+    sizeUnit: 'acre',
+    status: 'active',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }))
+  await assertFails(setDoc(doc(farmerDb, 'farms/farm-invalid-size'), {
+    ownerUid: 'farmer-1',
+    name: 'Invalid Farm',
+    location: { region: 'Ashanti', district: 'Kumasi', community: 'Bantama' },
+    size: 0,
+    sizeUnit: 'acre',
+    status: 'active',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }))
+  await assertFails(setDoc(doc(farmerDb, 'farms/farm-invalid-unit'), {
+    ownerUid: 'farmer-1',
+    name: 'Invalid Unit',
+    location: { region: 'Ashanti', district: 'Kumasi', community: 'Bantama' },
+    size: 1,
+    sizeUnit: 'square-meter',
+    status: 'active',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }))
+  await assertFails(setDoc(doc(farmerDb, 'farms/farm-invalid-location'), {
+    ownerUid: 'farmer-1',
+    name: 'Invalid Farm',
+    location: { region: 'Ashanti', district: 'Kumasi' },
+    size: 1,
+    sizeUnit: 'acre',
+    status: 'active',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }))
+  await assertFails(updateDoc(farmRef, {
+    ownerUid: 'farmer-2',
+    updatedAt: serverTimestamp(),
+  }))
+  await assertFails(updateDoc(farmRef, {
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }))
+  await assertFails(updateDoc(farmRef, {
+    size: -2,
+    updatedAt: serverTimestamp(),
+  }))
+  await assertSucceeds(updateDoc(farmRef, {
+    name: 'North Plot Updated',
+    size: 3,
+    updatedAt: serverTimestamp(),
+  }))
+  await assertSucceeds(updateDoc(farmRef, {
+    status: 'archived',
+    updatedAt: serverTimestamp(),
+  }))
+  await assertSucceeds(getDocs(query(
+    collection(farmerDb, 'farms'),
+    where('ownerUid', '==', 'farmer-1'),
+    where('status', '==', 'archived'),
+  )))
+  await assertSucceeds(updateDoc(farmRef, {
+    status: 'active',
+    updatedAt: serverTimestamp(),
+  }))
+  await assertFails(deleteDoc(farmRef))
+  await assertFails(setDoc(doc(farmerDb, 'farms/farm-delete'), {
+    ownerUid: 'farmer-1',
+    name: 'Delete Attempt',
+    location: { region: 'Ashanti', district: 'Kumasi', community: 'Bantama' },
+    size: 1,
+    sizeUnit: 'acre',
+    status: 'active',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    unexpected: true,
+  }))
+  await assertFails(setDoc(doc(anonymousDb, 'farms/anonymous'), {
+    ownerUid: 'anonymous',
+    name: 'Anonymous Farm',
+    location: { region: 'Ashanti', district: 'Kumasi', community: 'Bantama' },
+    size: 1,
+    sizeUnit: 'acre',
     status: 'active',
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -131,6 +300,21 @@ test('farmers self-register and only superadmins can manage user roles and statu
   })
 
   await assertSucceeds(getDocs(collection(superadminDb, 'users')))
+  await assertFails(getDoc(doc(superadminDb, 'farms/farm-1')))
+  await assertFails(updateDoc(doc(superadminDb, 'farms/farm-1'), {
+    status: 'archived',
+    updatedAt: serverTimestamp(),
+  }))
+  await assertFails(setDoc(doc(superadminDb, 'farms/superadmin-farm'), {
+    ownerUid: 'superadmin-1',
+    name: 'Superadmin Farm',
+    location: { region: 'Ashanti', district: 'Kumasi', community: 'Bantama' },
+    size: 1,
+    sizeUnit: 'acre',
+    status: 'active',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }))
   await assertSucceeds(setDoc(doc(superadminDb, 'users/staff-1'), {
     uid: 'staff-1',
     displayName: 'Agricultural Expert',
@@ -178,4 +362,5 @@ test('farmers self-register and only superadmins can manage user roles and statu
     await setDoc(doc(context.firestore(), 'users/farmer-1'), { status: 'inactive' }, { merge: true })
   })
   await assertSucceeds(getDoc(profileRef))
+  await assertFails(getDoc(farmRef))
 })

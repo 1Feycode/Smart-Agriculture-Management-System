@@ -92,7 +92,7 @@ sequenceDiagram
   end
 ```
 
-Frontend route guards redirect unauthenticated users to login and authenticated users away from irrelevant role areas. Firestore/Storage Rules decide access for all direct SDK requests. Treat missing, expired, disabled, or unsupported role claims as deny. Access-token refresh may be required after role changes.
+Frontend route guards redirect unauthenticated users to login and authenticated users away from irrelevant role areas. Firestore/Storage Rules decide access for all direct SDK requests. Treat missing, inactive, or unsupported Firestore profile roles as deny. Profile role changes take effect through Firestore profile listeners.
 
 ## Mermaid user-flow diagrams
 

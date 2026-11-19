@@ -1,7 +1,13 @@
 import type { Timestamp } from 'firebase/firestore'
 import type { User } from 'firebase/auth'
 import { initializeFirebase } from '../lib/firebase'
-import { isUserRole, type ManagedUserRole, type UserProfile, type UserRole } from '../types/user'
+import {
+  isUserRole,
+  type AdministrativeLocation,
+  type ManagedUserRole,
+  type UserProfile,
+  type UserRole,
+} from '../types/user'
 
 export async function getUserProfile(uid: string): Promise<UserProfile> {
   const services = await getFirebaseServices()
@@ -115,12 +121,17 @@ export async function updateManagedUserAccess(
   })
 }
 
-export async function updateUserProfile(uid: string, displayName: string): Promise<UserProfile> {
+export async function updateUserProfile(
+  uid: string,
+  displayName: string,
+  location: AdministrativeLocation,
+): Promise<UserProfile> {
   const services = await getFirebaseServices()
   const firestoreSdk = await import('firebase/firestore')
 
   await firestoreSdk.updateDoc(firestoreSdk.doc(services.firestore, 'users', uid), {
     displayName,
+    location,
     updatedAt: firestoreSdk.serverTimestamp(),
   })
 
@@ -139,6 +150,7 @@ function parseUserProfile(value: unknown, expectedUid: string): UserProfile {
     || typeof email !== 'string'
     || !isUserRole(role)
     || typeof status !== 'string'
+    || (location !== undefined && !isAdministrativeLocation(location))
   ) {
     throw new Error('The account profile is incomplete or invalid.')
   }
@@ -149,7 +161,7 @@ function parseUserProfile(value: unknown, expectedUid: string): UserProfile {
     email,
     role,
     status,
-    ...(isRecord(location) ? { location } : {}),
+    ...(isAdministrativeLocation(location) ? { location } : {}),
     ...(isTimestamp(createdAt) ? { createdAt } : {}),
     ...(isTimestamp(updatedAt) ? { updatedAt } : {}),
   }
@@ -157,6 +169,18 @@ function parseUserProfile(value: unknown, expectedUid: string): UserProfile {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function isAdministrativeLocation(value: unknown): value is AdministrativeLocation {
+  return isRecord(value)
+    && Object.keys(value).length === 3
+    && isValidLocationText(value.region)
+    && isValidLocationText(value.district)
+    && isValidLocationText(value.community)
+}
+
+function isValidLocationText(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0 && value.length <= 100
 }
 
 function isTimestamp(value: unknown): value is Timestamp {

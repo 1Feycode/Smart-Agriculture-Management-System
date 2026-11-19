@@ -6,6 +6,10 @@ import { AccountEntryPage } from '../pages/AccountEntryPage'
 import { AccessDeniedPage } from '../pages/AccessDeniedPage'
 import { CropInformationPage } from '../pages/CropInformationPage'
 import { DashboardPlaceholderPage } from '../pages/DashboardPlaceholderPage'
+import { FarmDetailsPage } from '../pages/FarmDetailsPage'
+import { FarmFormPage } from '../pages/FarmFormPage'
+import { FarmListPage } from '../pages/FarmListPage'
+import { FarmerDashboardPage } from '../pages/FarmerDashboardPage'
 import { HomePage } from '../pages/HomePage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { ProfilePage } from '../pages/ProfilePage'
@@ -67,7 +71,12 @@ export const router = createBrowserRouter([
     errorElement: <RouteErrorPage />,
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
-      { path: 'dashboard', element: <DashboardPlaceholderPage role="farmer" /> },
+      { path: 'dashboard', element: <FarmerDashboardPage /> },
+      { path: 'profile', element: <ProfilePage /> },
+      { path: 'farms', element: <FarmListPage /> },
+      { path: 'farms/new', element: <FarmFormPage /> },
+      { path: 'farms/:farmId/edit', element: <FarmFormPage /> },
+      { path: 'farms/:farmId', element: <FarmDetailsPage /> },
       { path: '*', element: <DashboardPlaceholderPage role="farmer" /> },
     ],
   },

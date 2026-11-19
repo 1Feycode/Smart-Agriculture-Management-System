@@ -2,7 +2,7 @@
 
 ## Status and source caveat
 
-This is a proposed logical design based on the Phase 1 FR-001–FR-131 baseline and the provided Phase 2 brief. The original SRS and source code were unavailable. Required profile fields, agricultural measurement ranges, units, retention periods, public visibility, and approval policies are **To be confirmed with stakeholders**. Treat these schemas as a starting contract; validate them with the SRS and Rules emulator before use.
+This logical design is based on the Phase 1 FR-001–FR-131 baseline and implementation decisions. Profile/farm administrative location uses region, district, and community; farm area units are hectares or acres. Agricultural measurement ranges, retention periods, public visibility, and approval policies remain **To be confirmed with stakeholders**. Validate schemas with the Rules emulator before extending them.
 
 ## Document ID and relationship strategy
 
@@ -25,9 +25,9 @@ Types use Firestore names: `string`, `number`, `boolean`, `timestamp`, `map`, `a
 | uid | string | Yes | Auth UID, document ID | Must equal path/auth UID | `uid-farmer-001` | FR-001–012, FR-014 |
 | displayName | string | Yes | User-facing name | Trimmed, bounded length; exact fields TBD | `Amina Farmer` | FR-002, FR-008 |
 | email | string | Yes | Contact/login email snapshot | Valid email; Auth remains authoritative | `farmer@example.test` | FR-001–006 |
-| role | string | Yes | Display role; authorization uses server-issued claim | Enum: farmer/expert/dataManager/admin; client cannot change | `farmer` | FR-010–012, FR-120 |
-| status | string | Yes | Account application state | Approved enum; deactivation process TBD | `active` | FR-012, FR-111–113 |
-| location | map | No | Administrative/location display values | Approved taxonomy TBD; no precise coordinates unless needed | `{region:"TBD"}` | FR-015 |
+| role | string | Yes | Authorization role in current free-tier Rules | Enum: farmer/expert/dataManager/admin/superadmin; owner cannot change self; active superadmin manages other profiles | `farmer` | FR-010–012, FR-120 |
+| status | string | Yes | Account application state | `active` or `inactive`; inactive profile is denied protected access | `active` | FR-012, FR-111–113 |
+| location | map | No | Farmer administrative location | If present: `region`, `district`, `community`; each non-empty, <=100 chars; no precise coordinates | `{region:"Ashanti", district:"Kumasi", community:"Bantama"}` | FR-015 |
 | createdAt / updatedAt | timestamp | Yes | Profile audit times | Server time | timestamp | FR-013 |
 
 ### `farms/{farmId}`
@@ -36,12 +36,12 @@ Types use Firestore names: `string`, `number`, `boolean`, `timestamp`, `map`, `a
 |---|---|---:|---|---|---|---|
 | ownerUid | string | Yes | Owning farmer UID | Auth UID on create; immutable | `uid-farmer-001` | FR-016, FR-021 |
 | name | string | Yes | Farm label | Trimmed, bounded | `North plot` | FR-016 |
-| location | map | Yes | Administrative location; coordinates optional | Approved location schema TBD | `{region:"TBD"}` | FR-015 |
+| location | map | Yes | Farm administrative location | `region`, `district`, `community`; each non-empty, <=100 chars; no coordinates | `{region:"Ashanti", district:"Kumasi", community:"Bantama"}` | FR-015 |
 | size | number | Yes | Farm area | Positive finite value | `2.5` | FR-017 |
-| sizeUnit | string | Yes | Area unit | Stakeholder-approved enum | `hectare` | FR-017 |
-| cropIds | array<string> | No | Current crop refs | Bounded; valid IDs when written | `["crop-001"]` | FR-022 |
-| activitySummary | string | No | Farmer activity description | Length limit; no unsupported taxonomy | `Seasonal grain production` | FR-019 |
-| status | string | Yes | Active/archive state | `active` or `archived` | `active` | FR-020, FR-023 |
+| sizeUnit | string | Yes | Area unit | `hectare` or `acre` | `hectare` | FR-017 |
+| cropIds | array<string> | No | Current crop refs | Not collected in Phase 3; add with the crop-management workflow | `["crop-001"]` | FR-022 |
+| activitySummary | string | No | Farmer activity description | Not collected in Phase 3; add after activity fields are confirmed | `Seasonal grain production` | FR-019 |
+| status | string | Yes | Active/archive state | `active` or `archived`; archived records may be reactivated | `active` | FR-020, FR-023 |
 | createdAt / updatedAt | timestamp | Yes | Audit times | Server time | timestamp | FR-023 |
 
 ### `crops/{cropId}` and `cropCategories/{categoryId}`
@@ -183,6 +183,7 @@ Composite indexes must be validated against exact SDK queries and Rules; this is
 | Collection | Query pattern / order | Index suggestion |
 |---|---|---|
 | farms | `ownerUid == uid`, `status == active`, `updatedAt desc` | ownerUid, status, updatedAt desc |
+| farms | `ownerUid == uid`, `status == active`, `name asc` (including name-prefix search) | ownerUid, status, name asc |
 | soilTests | ownerUid + farmId; `testDate desc` | ownerUid, farmId, testDate desc |
 | recommendations | ownerUid + status + `createdAt desc` | ownerUid, status, createdAt desc |
 | recommendations | assignedExpertUid + status + `createdAt asc` | assignedExpertUid, status, createdAt asc |
@@ -198,8 +199,9 @@ Use `limit()` (initially 20–50, confirm UX), `startAfter(lastSnapshot)` cursor
 
 ## Security, traceability, and free-tier implications
 
-- Claims are authoritative for elevated roles; user document role is informational. Client cannot set claims.
-- Rules enforce UID ownership and immutable fields; public reads only apply to explicitly public/active curated records.
+- Firestore user profile roles are authoritative in the current free-tier application. Only an active superadmin can create or change another user's role.
+- Farm Rules enforce active farmer status, UID ownership, immutable owner/creation fields, allowed area units, validated administrative locations, and archive-only removal; client deletes are denied.
+- Public reads only apply to explicitly public/active curated records.
 - Admin SDK Cloud Functions bypass Rules; function code must validate identity, role, allowed fields, and idempotency.
 - Keep activity logs append-only and exclude passwords, tokens, private URLs, and unnecessary personal data.
 - Prices are historical observations: immutable amount/product/market/source/date; correction creates a linked new record. Verification-state changes must retain verifier and timestamp.

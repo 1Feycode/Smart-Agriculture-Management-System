@@ -14,6 +14,7 @@ import {
   Sprout,
   Store,
   Users,
+  UserRound,
   UserCog,
   type LucideIcon,
 } from 'lucide-react'
@@ -39,6 +40,7 @@ export const dashboardNavigation: Record<DashboardRole, DashboardNavigation> = {
     basePath: '/farmer/dashboard',
     items: [
       { label: 'Overview', href: '/farmer/dashboard', icon: LayoutDashboard },
+      { label: 'Profile', href: '/farmer/profile', icon: UserRound },
       { label: 'Farms', href: '/farmer/farms', icon: MapPin },
       { label: 'Crop information', href: '/farmer/crops', icon: Leaf },
       { label: 'Soil tests', href: '/farmer/soil-tests', icon: FlaskConical },

@@ -17,6 +17,28 @@ service cloud.firestore {
       return value is string && value.size() > 0 && value.size() <= 120;
     }
 
+    function validLocationText(value) {
+      return value is string && value.size() > 0 && value.size() <= 100;
+    }
+
+    function validLocation(value) {
+      return value is map
+        && value.keys().hasAll(['region', 'district', 'community'])
+        && value.keys().hasOnly(['region', 'district', 'community'])
+        && validLocationText(value.region)
+        && validLocationText(value.district)
+        && validLocationText(value.community);
+    }
+
+    function activeFarmer() {
+      let profilePath = /databases/$(database)/documents/users/$(request.auth.uid);
+      return signedIn()
+        && request.auth.token.email_verified == true
+        && exists(profilePath)
+        && get(profilePath).data.role == 'farmer'
+        && get(profilePath).data.status == 'active';
+    }
+
     function validRole(value) {
       return value in ['farmer', 'expert', 'dataManager', 'admin', 'superadmin'];
     }
@@ -66,8 +88,10 @@ service cloud.firestore {
             && resource.data.status == 'active'
             && request.resource.data.status == 'active'
             && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['displayName', 'updatedAt'])
+              .hasOnly(['displayName', 'location', 'updatedAt'])
             && validDisplayName(request.resource.data.displayName)
+            && 'location' in request.resource.data
+            && validLocation(request.resource.data.location)
             && request.resource.data.updatedAt == request.time
           )
           || (
@@ -79,6 +103,55 @@ service cloud.firestore {
             && request.resource.data.status in ['active', 'inactive']
             && request.resource.data.createdAt == resource.data.createdAt
             && request.resource.data.updatedAt == request.time
+          )
+        );
+
+      allow delete: if false;
+    }
+
+    match /farms/{farmId} {
+      allow get, list: if activeFarmer()
+        && resource.data.ownerUid == request.auth.uid;
+
+      allow create: if activeFarmer()
+        && request.resource.data.keys().hasAll([
+          'ownerUid', 'name', 'location', 'size', 'sizeUnit', 'status', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'ownerUid', 'name', 'location', 'size', 'sizeUnit', 'status', 'createdAt', 'updatedAt'
+        ])
+        && request.resource.data.ownerUid == request.auth.uid
+        && validDisplayName(request.resource.data.name)
+        && validLocation(request.resource.data.location)
+        && (request.resource.data.size is int || request.resource.data.size is float)
+        && request.resource.data.size > 0
+        && request.resource.data.sizeUnit in ['hectare', 'acre']
+        && request.resource.data.status == 'active'
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      allow update: if activeFarmer()
+        && resource.data.ownerUid == request.auth.uid
+        && request.resource.data.ownerUid == resource.data.ownerUid
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time
+        && validDisplayName(request.resource.data.name)
+        && validLocation(request.resource.data.location)
+        && (request.resource.data.size is int || request.resource.data.size is float)
+        && request.resource.data.size > 0
+        && request.resource.data.sizeUnit in ['hectare', 'acre']
+        && (
+          (
+            resource.data.status == 'active'
+            && request.resource.data.status in ['active', 'archived']
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['name', 'location', 'size', 'sizeUnit', 'status', 'updatedAt'])
+          )
+          || (
+            resource.data.status == 'archived'
+            && request.resource.data.status == 'active'
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['status', 'updatedAt'])
           )
         );
 

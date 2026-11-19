@@ -10,7 +10,7 @@ SAMS is primarily an SDK-backed web application, not a conventional REST server.
 - The superadmin page creates staff identities through a secondary Firebase Auth instance, creates their profiles through Firestore, and sends verification/password-reset emails. Firestore Rules allow only an active superadmin to list users or create/update another user's role/status. The initial superadmin is bootstrapped manually by the Firebase project owner.
 - Deactivation changes the profile status to `inactive`, which blocks SAMS access. It does not delete the Firebase Authentication identity or revoke its tokens; permanent Auth deletion is a manual Firebase Console operation in this no-server setup.
 - The browser requires `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, and `VITE_FIREBASE_APP_ID` in the local `sams-web/.env`. Use Firebase project web-app settings; do not commit actual values. Configure Firebase Auth email/password sign-in, email verification, and a password policy with a minimum of eight characters.
-- Firestore rules currently permit only owner-scoped active user profiles. All other collections remain denied until their schemas, access flows, and emulator tests are reviewed.
+- Firestore Rules permit owner-scoped user profiles and farms; all other business collections remain denied until their schemas, access flows, and emulator tests are reviewed.
 - To run `npm run test:rules`, install the Firebase CLI separately (`npm install -g firebase-tools`); the CLI is intentionally not bundled as an application dependency.
 
 ## Operations that can use React + Firebase SDK + Rules
@@ -20,7 +20,7 @@ SAMS is primarily an SDK-backed web application, not a conventional REST server.
 | Farmer sign up/sign in/sign out/password reset | Firebase Auth SDK | Authentication configuration; owner may create only a farmer profile |
 | Create/manage staff roles and deactivate SAMS access | Secondary Firebase Auth + Firestore SDK | Active superadmin profile; cannot change own role/status |
 | Read/update own profile | Firestore SDK | UID ownership; role/status immutable to owner |
-| Create/read/update own farms and soil tests | Firestore SDK | Owner UID and linked-farm checks; allowed fields |
+| Create/read/update/archive own farms | Firestore SDK | Active farmer profile, owner UID, validated fields and immutable ownership |
 | Read public crops/categories/fertilizers/verified prices | Firestore SDK | Explicit public/active/approved filtering |
 | Submit question and read own thread | Firestore SDK | Farmer ownership; expert assignment rules |
 | Upload question image | Storage SDK | Owner-scoped path, MIME/size limits and question ownership |

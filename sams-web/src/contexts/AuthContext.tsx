@@ -20,6 +20,7 @@ import {
 } from '../services/authService'
 import { observeUserProfile, updateUserProfile } from '../services/userService'
 import type { AuthContextValue, AuthState } from '../types/auth'
+import type { AdministrativeLocation } from '../types/user'
 import { isFirebaseConfigured } from '../lib/firebase'
 import { AuthContext } from './auth-context'
 
@@ -175,11 +176,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return role
   }, [state.user])
 
-  const updateProfile = useCallback(async (displayName: string) => {
+  const updateProfile = useCallback(async (displayName: string, location: AdministrativeLocation) => {
     if (!state.user) {
       throw new AuthServiceError('auth/no-current-user', 'Sign in before updating your profile.')
     }
-    const profile = await updateUserProfile(state.user.uid, displayName)
+    const profile = await updateUserProfile(state.user.uid, displayName, location)
     setState((current) => ({ ...current, profile, accessError: null }))
   }, [state.user])
 

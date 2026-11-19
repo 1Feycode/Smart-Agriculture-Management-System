@@ -46,7 +46,7 @@ export function AccessDeniedPage() {
         <p>{message}</p>
         {!auth.role && (
           <div className="account-card__notice" role="status">
-            SAMS requires a trusted server-issued role for account access. The application cannot assign one from this page.
+            SAMS checks your active account profile before granting access. Contact the project owner if your profile is missing or inactive.
           </div>
         )}
         {auth.role && <Link className="button button--primary" to={roleDashboardPaths[auth.role]}>Go to your dashboard</Link>}

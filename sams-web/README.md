@@ -2,13 +2,24 @@
 
 SAMS is a responsive agricultural information platform foundation built with React, TypeScript, Vite, Tailwind CSS, React Router, Lucide React, and the modular Firebase SDK.
 
-## Current Phase 2 scope
+## Current implementation
 
-The app includes email/password authentication, email verification, password reset, profile view/edit, role-protected dashboard shells, public farmer registration, and a superadmin user-management page. Business modules and dashboard data remain placeholders.
+The app includes email/password authentication, email verification, password reset, role-protected dashboard shells, public farmer registration, superadmin user management, farmer profile/location editing, and owner-scoped farm management.
 
-The app reads roles from Firestore user profiles. Farmers can create only their own farmer profile. An active superadmin can create staff accounts, assign roles, and deactivate or reactivate other accounts. Firestore Rules prevent users from changing their own role and deny access to all other collections. Firebase Storage rules deny all access.
+The app reads roles from Firestore user profiles. Farmers can create only their own farmer profile and manage only their own farms. An active superadmin can create staff accounts, assign roles, and deactivate or reactivate other accounts. Firestore Rules deny access to other business collections. Firebase Storage rules deny all access.
 
 This setup avoids Cloud Functions and uses Firebase Authentication and Firestore, subject to free-tier quotas. Deactivation blocks SAMS access but does not delete the Firebase Authentication account or revoke its tokens. A project owner must use Firebase Console to permanently delete an Auth identity.
+
+## Phase 3: farmer profile and farm management
+
+- Farmers can save a profile location (region, district, community/town) at `/farmer/profile` (the existing `/profile` route remains available). A location is administrative only; precise coordinates are not collected.
+- The farmer dashboard displays an authorized active-farm count, the three most recently updated active farms, and shortcuts to farms and profile.
+- Farmers can list, create, view, edit, archive, and reactivate their own farms. The paginated list supports recently-updated or name sorting and a case-sensitive farm-name prefix search.
+- Farm details display creation/update dates and clearly identify crop, soil, fertilizer, weather, and activity-history sections that are pending later modules.
+- New farms prefill their location from the profile, but farm and profile locations can be edited independently.
+- Farm records use `ownerUid`, server timestamps, and `active`/`archived` status. Deletion is disabled to retain records for future links.
+- Crop selection/activity summaries and soil-test entry are not part of this phase. The current rules grant farm access only to the verified, active owner-farmer; staff farm inspection/archive access is not enabled. Other Firestore collections remain denied.
+- Deploy both `sams-web/firestore.rules` and `sams-web/firestore.indexes.json` when publishing these changes. Name sorting/search adds a composite farm index.
 
 ## Requirements
 

@@ -24,7 +24,12 @@ export function DashboardLayout({ role }: DashboardLayoutProps) {
   const currentItem = navigation.items
     .filter((item) => location.pathname === item.href || location.pathname.startsWith(`${item.href}/`))
     .sort((left, right) => right.href.length - left.href.length)[0]
-  const pageTitle = currentItem?.label ?? formatLabel(location.pathname.slice(navigation.basePath.length))
+  const pageTitle = role === 'farmer'
+    ? getFarmerPageTitle(location.pathname)
+    : currentItem?.label ?? formatLabel(location.pathname.slice(navigation.basePath.length))
+  const pageDescription = role === 'farmer'
+    ? getFarmerPageDescription(location.pathname)
+    : 'A foundation shell for future SAMS workflows.'
   const breadcrumbs: BreadcrumbItem[] = [
     { label: navigation.label, href: navigation.basePath },
     { label: location.pathname === navigation.basePath ? 'Overview' : pageTitle },
@@ -53,7 +58,7 @@ export function DashboardLayout({ role }: DashboardLayoutProps) {
             <span className="dashboard-topbar__eyebrow">Workspace</span>
             <span>{navigation.label}</span>
           </div>
-          <Link className="profile-placeholder" to="/profile" aria-label="View your profile">
+          <Link className="profile-placeholder" to={role === 'farmer' ? '/farmer/profile' : '/profile'} aria-label="View your profile">
             <span className="profile-placeholder__avatar" aria-hidden="true"><UserRound size={18} /></span>
             <span><strong>{profile?.displayName || 'Profile'}</strong><small>{roleLabels[role]}</small></span>
           </Link>
@@ -65,10 +70,30 @@ export function DashboardLayout({ role }: DashboardLayoutProps) {
         <main id="dashboard-content" className="dashboard-content">
           {logoutError && <p className="account-feedback account-feedback--error" role="alert">{logoutError}</p>}
           <Breadcrumbs items={breadcrumbs} />
-          <PageTitle title={pageTitle} description="A foundation shell for future SAMS workflows." />
+          <PageTitle title={pageTitle} description={pageDescription} />
           <Outlet />
         </main>
       </div>
     </div>
   )
+}
+
+function getFarmerPageTitle(pathname: string): string {
+  if (pathname === '/farmer/dashboard') return 'Farmer Dashboard'
+  if (pathname === '/farmer/profile') return 'My Profile'
+  if (pathname === '/farmer/farms') return 'My Farms'
+  if (pathname === '/farmer/farms/new') return 'Add a Farm'
+  if (pathname.endsWith('/edit')) return 'Edit Farm'
+  if (pathname.startsWith('/farmer/farms/')) return 'Farm Details'
+  return 'Farmer Workspace'
+}
+
+function getFarmerPageDescription(pathname: string): string {
+  if (pathname === '/farmer/dashboard') return 'Review your active farms and recently updated farm information.'
+  if (pathname === '/farmer/profile') return 'Review and update your personal details and administrative location.'
+  if (pathname === '/farmer/farms') return 'Search, review, and manage the farms you own.'
+  if (pathname === '/farmer/farms/new') return 'Register a farm with its location and measured area.'
+  if (pathname.endsWith('/edit')) return 'Update the approved details for your farm.'
+  if (pathname.startsWith('/farmer/farms/')) return 'Review the saved information and status for this farm.'
+  return 'Manage your SAMS farmer account.'
 }

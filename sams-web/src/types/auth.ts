@@ -1,5 +1,5 @@
 import type { User } from 'firebase/auth'
-import type { UserProfile, UserRole } from './user'
+import type { AdministrativeLocation, UserProfile, UserRole } from './user'
 
 export interface AuthState {
   user: User | null
@@ -17,5 +17,5 @@ export interface AuthContextValue extends AuthState {
   resetPassword: (email: string) => Promise<void>
   resendVerificationEmail: () => Promise<void>
   refreshSession: () => Promise<UserRole>
-  updateProfile: (displayName: string) => Promise<void>
+  updateProfile: (displayName: string, location: AdministrativeLocation) => Promise<void>
 }

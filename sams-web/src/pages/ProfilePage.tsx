@@ -3,11 +3,14 @@ import { Link } from 'react-router-dom'
 import { FormField } from '../forms/FormField'
 import { useAuth } from '../hooks/useAuth'
 import { firebaseAuthErrorMessage } from '../services/authService'
-import { roleDashboardPaths, roleLabels } from '../types/user'
+import { roleDashboardPaths, roleLabels, type AdministrativeLocation } from '../types/user'
 
 export function ProfilePage() {
   const { user, profile, role, updateProfile } = useAuth()
   const [displayName, setDisplayName] = useState(profile?.displayName ?? '')
+  const [region, setRegion] = useState(profile?.location?.region ?? '')
+  const [district, setDistrict] = useState(profile?.location?.district ?? '')
+  const [community, setCommunity] = useState(profile?.location?.community ?? '')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
@@ -18,6 +21,11 @@ export function ProfilePage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const trimmedName = displayName.trim()
+    const location = {
+      region: region.trim(),
+      district: district.trim(),
+      community: community.trim(),
+    }
     if (!trimmedName) {
       setNameError('Enter your full name.')
       return
@@ -26,14 +34,25 @@ export function ProfilePage() {
       setNameError('Your name must be 120 characters or fewer.')
       return
     }
-
     setNameError(undefined)
+    if (!location.region || !location.district || !location.community) {
+      setError('Enter your region, district, and community or town.')
+      return
+    }
+    if (Object.values(location).some((value) => value.length > 100)) {
+      setError('Each location field must be 100 characters or fewer.')
+      return
+    }
+
     setError(null)
     setMessage(null)
     setSubmitting(true)
     try {
-      await updateProfile(trimmedName)
+      await updateProfile(trimmedName, location)
       setDisplayName(trimmedName)
+      setRegion(location.region)
+      setDistrict(location.district)
+      setCommunity(location.community)
       setMessage('Your profile has been updated.')
     } catch (updateError) {
       setError(firebaseAuthErrorMessage(updateError))
@@ -61,13 +80,13 @@ export function ProfilePage() {
             </div>
           )}
         </dl>
-        <p className="profile-page__note">
-          Location details are not editable until their approved format is defined. Existing location data is preserved.
-        </p>
       </section>
 
       <section className="profile-card" aria-labelledby="edit-profile-title">
         <h2 id="edit-profile-title">Edit profile</h2>
+        <p className="profile-page__note">
+          Location is used to tailor agricultural information. Enter administrative areas only; SAMS does not request precise coordinates.
+        </p>
         <form className="profile-form" onSubmit={(event) => void handleSubmit(event)} noValidate>
           <FormField
             id="profile-display-name"
@@ -79,6 +98,36 @@ export function ProfilePage() {
             value={displayName}
             onChange={(event) => setDisplayName(event.target.value)}
             error={nameError}
+          />
+          <FormField
+            id="profile-region"
+            name="region"
+            label="Region"
+            maxLength={100}
+            autoComplete="address-level1"
+            required
+            value={region}
+            onChange={(event) => setRegion(event.target.value)}
+          />
+          <FormField
+            id="profile-district"
+            name="district"
+            label="District"
+            maxLength={100}
+            autoComplete="address-level2"
+            required
+            value={district}
+            onChange={(event) => setDistrict(event.target.value)}
+          />
+          <FormField
+            id="profile-community"
+            name="community"
+            label="Community or town"
+            maxLength={100}
+            autoComplete="address-level3"
+            required
+            value={community}
+            onChange={(event) => setCommunity(event.target.value)}
           />
           {error && <div className="account-feedback account-feedback--error" role="alert">{error}</div>}
           {message && <div className="account-feedback account-feedback--success" role="status">{message}</div>}
@@ -94,9 +143,6 @@ export function ProfilePage() {
   )
 }
 
-function formatLocation(location: Readonly<Record<string, unknown>>): string {
-  const entries = Object.entries(location)
-    .filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].length > 0)
-    .map(([field, value]) => `${field}: ${value}`)
-  return entries.join(', ') || 'Location information provided'
+function formatLocation(location: AdministrativeLocation): string {
+  return `${location.community}, ${location.district}, ${location.region}`
 }

@@ -6,13 +6,19 @@ export const MANAGED_USER_ROLES = ['expert', 'dataManager', 'admin', 'superadmin
 export type UserRole = (typeof USER_ROLES)[number]
 export type ManagedUserRole = (typeof MANAGED_USER_ROLES)[number]
 
+export interface AdministrativeLocation {
+  region: string
+  district: string
+  community: string
+}
+
 export interface UserProfile {
   uid: string
   displayName: string
   email: string
   role: UserRole
   status: string
-  location?: Readonly<Record<string, unknown>>
+  location?: AdministrativeLocation
   createdAt?: Timestamp
   updatedAt?: Timestamp
 }
