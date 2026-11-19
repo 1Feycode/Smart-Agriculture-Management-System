@@ -15,14 +15,12 @@ after(async () => {
   await testEnvironment.cleanup()
 })
 
-test('profile access is owner-scoped and only approved fields can be changed', async () => {
+test('farmers can create only their own farmer profile and change approved fields', async () => {
   const farmerDb = testEnvironment.authenticatedContext('farmer-1', {
     email: 'farmer@example.test',
-    role: 'farmer',
   }).firestore()
   const otherFarmerDb = testEnvironment.authenticatedContext('farmer-2', {
     email: 'other@example.test',
-    role: 'farmer',
   }).firestore()
   const noRoleDb = testEnvironment.authenticatedContext('farmer-3', {
     email: 'third@example.test',
@@ -48,6 +46,7 @@ test('profile access is owner-scoped and only approved fields can be changed', a
   await assertFails(getDoc(doc(otherFarmerDb, 'users/farmer-1')))
   await assertFails(getDoc(doc(anonymousDb, 'users/farmer-1')))
   await assertFails(getDoc(doc(noRoleDb, 'users/farmer-1')))
+  await assertFails(getDoc(doc(farmerDb, 'farms/farm-1')))
 
   await assertSucceeds(updateDoc(profileRef, {
     displayName: 'Amina Updated',
@@ -78,11 +77,20 @@ test('profile access is owner-scoped and only approved fields can be changed', a
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   }))
-  await assertFails(setDoc(doc(noRoleDb, 'users/farmer-3'), {
+  await assertSucceeds(setDoc(doc(noRoleDb, 'users/farmer-3'), {
     uid: 'farmer-3',
     displayName: 'No Role',
     email: 'third@example.test',
     role: 'farmer',
+    status: 'active',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }))
+  await assertFails(setDoc(doc(farmerDb, 'users/farmer-expert'), {
+    uid: 'farmer-expert',
+    displayName: 'Self-promoted',
+    email: 'farmer@example.test',
+    role: 'expert',
     status: 'active',
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),

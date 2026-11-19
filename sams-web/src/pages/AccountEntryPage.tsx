@@ -74,16 +74,11 @@ export function AccountEntryPage({ mode }: AccountEntryPageProps) {
         const returnTo = safeReturnTo(searchParams.get('returnTo'))
         navigate(returnTo ?? roleDashboardPaths[role], { replace: true })
       } else if (mode === 'register') {
-        const provisioned = await auth.register(fullName.trim(), email.trim(), password)
-        setFeedback(provisioned
-          ? {
-            kind: 'success',
-            message: 'Your account is ready. Check your email and verify your address before signing in.',
-          }
-          : {
-            kind: 'info',
-            message: 'Your Firebase account was created and a verification email was sent, but trusted farmer-role provisioning has not completed. Access is blocked until the server-side process securely provisions your role. Do not retry registration.',
-          })
+        await auth.register(fullName.trim(), email.trim(), password)
+        setFeedback({
+          kind: 'success',
+          message: 'Your farmer account is ready. Check your email and verify your address before signing in.',
+        })
       } else {
         try {
           await auth.resetPassword(email.trim())

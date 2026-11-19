@@ -6,8 +6,8 @@ The rules below are a restrictive **design baseline**, not a production certific
 
 ### Trust model
 
-- Elevated roles come from server-issued Firebase Auth custom claims (`role`); `users/{uid}.role` is informational only.
-- No client-side role assignment is permitted. New farmer account role provisioning and privileged role changes require an Admin SDK process/Cloud Function (see document 08).
+- Current free-tier application mode supports farmers only. Authorization reads `users/{uid}.role`; Firestore Rules allow a signed-in user to create only their own profile with `role == 'farmer'`, and prevent role/status changes afterward.
+- Expert, data-manager, and administrator access is disabled. Enabling elevated roles requires a trusted provisioning design; do not accept elevated roles from the browser.
 - Public data means only explicitly public, active, approved records. Firestore queries must include filters compatible with Rules; Rules are not query filters.
 - Historical market-price amount/product/market/source/date are immutable. Corrections create new linked observations. Verification metadata may be changed only by authorized data managers.
 - Activity log and notification creation are server-only. Clients can only mark their own notification read.
@@ -15,7 +15,7 @@ The rules below are a restrictive **design baseline**, not a production certific
 
 ### Current application rules scope
 
-The executable rules file at `sams-web/firestore.rules` currently implements only the user-profile contract: owner-only reads of active profiles, farmer-claim-gated profile creation, display-name-only updates, and no deletes. All other collections remain denied. Location editing is intentionally excluded until its map schema is approved. The larger rule set below remains a design proposal and must not be copied into production without schema review, emulator coverage, and security approval.
+The executable rules file at `sams-web/firestore.rules` currently implements only the user-profile contract: owner-only reads of active profiles, owner-created farmer-only profiles, display-name-only updates, and no deletes. All other collections remain denied. Location editing is intentionally excluded until its map schema is approved. The larger rule set below remains a future design proposal and must not be copied into production without schema review, emulator coverage, and security approval.
 
 ## Firestore Security Rules
 

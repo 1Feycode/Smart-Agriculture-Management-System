@@ -2,11 +2,13 @@
 
 SAMS is a responsive agricultural information platform foundation built with React, TypeScript, Vite, Tailwind CSS, React Router, Lucide React, and the modular Firebase SDK.
 
-## Phase 1 scope
+## Current Phase 2 scope
 
-This project currently provides the public application shell, crop-information entry point, future account entry screens, and responsive dashboard layout shells for Farmer, Agricultural Expert, Agricultural Data Manager, and Administrator roles. Role dashboards and data modules are placeholders: authentication, role authorization, live agricultural data, and database operations are not implemented.
+The app includes email/password authentication screens, email verification, password reset, a shared authentication context, profile view/edit, and a protected farmer dashboard shell. Farmers can create their own profile; Firestore Rules restrict client-created profiles to the farmer role. Expert, data-manager, and administrator access is not enabled. Business modules and dashboard data remain placeholders.
 
-Firebase Firestore and Storage rules start with access denied. Do not deploy the rules as application policy until access requirements are designed and reviewed. Cloud Storage is optional. The Firebase Console for this project currently requires a billing account/Blaze upgrade to create a storage bucket.
+The app reads the role from the owner-scoped Firestore profile. The client can create only its own `farmer` profile, and cannot change its role or account status afterward. The current Firestore rules deny access to all other collections. Firebase Storage rules deny all access.
+
+This setup avoids Cloud Functions and works with Firebase Authentication and Firestore on the free tier, subject to their quotas. Anyone can register as a farmer; elevated roles are intentionally unavailable. Existing accounts created before this change can create their own farmer profile at sign-in after verifying their email.
 
 ## Requirements
 
@@ -28,8 +30,19 @@ Open the local URL printed by Vite.
 npm run typecheck
 npm run lint
 npm run build
+npm run test:rules
 ```
 
+`test:rules` uses the Firestore Emulator Suite and requires the Firebase CLI (`npm install -g firebase-tools`).
+
+## Create a farmer account
+
+1. Enable **Email/Password** in Firebase Authentication and configure email verification.
+2. Deploy the updated `sams-web/firestore.rules` to the same Firebase project used by the web app.
+3. Open the public **Register** page and enter the farmer's name, email, and password.
+4. The app creates the Authentication account and its own farmer profile. The farmer verifies their email and signs in to reach `/farmer/dashboard`.
+
+The app and Firestore Rules do not allow self-registration as an expert, data manager, or administrator. Do not change a user's role manually in Firestore: elevated roles are not supported in this free-tier setup.
 ## Deploy the frontend to Vercel
 
 The React/Vite frontend can be deployed on Vercel while Firebase provides the backend services. Firebase Hosting is also configured as an alternative, but is not required when using Vercel.
@@ -49,7 +62,7 @@ The React/Vite frontend can be deployed on Vercel while Firebase provides the ba
 | `VITE_FIREBASE_APP_ID` | `appId` |
 | `VITE_FIREBASE_STORAGE_BUCKET` (optional) | `storageBucket` |
 
-These are Firebase web configuration values and are included in the frontend bundle; they are not server secrets. Never add service-account credentials or private API keys to Vercel `VITE_` variables. Firestore and Storage remain inaccessible until their deny-all rules are replaced with reviewed policies.
+These are Firebase web configuration values and are included in the frontend bundle; they are not server secrets. Never add service-account credentials or private API keys to Vercel `VITE_` variables. Firestore currently allows only the reviewed profile operations; other collections and Storage remain inaccessible until their rules are implemented and tested.
 
 ## Connect a Firebase project
 
@@ -69,6 +82,6 @@ These are Firebase web configuration values and are included in the frontend bun
 3. Restart the Vite development server. `src/lib/firebase.ts` exposes lazy modular initialization when the five core values are present; otherwise the application displays a clear configuration notice and continues to render the public shell. Firebase Storage initializes separately and only when a bucket value is configured.
 4. Configure Firebase services in the console when they are needed. The web configuration identifies a Firebase project; it is not a substitute for access controls. Never put service-account credentials or private API secrets in a `VITE_` variable.
 5. The Firebase Console for this project requires a billing account/Blaze upgrade before a Cloud Storage bucket can be created. Do not upgrade unless you accept usage-based charges. File uploads are not part of this foundation; if billing is not available, defer uploads (for example, keep expert questions text-only) or approve a separate storage provider before implementing them.
-6. Review and replace the deny-all Firestore and Storage rules with stakeholder-approved policies before enabling data access. Test rules before deployment.
+6. Review and extend the restrictive Firestore and Storage rules with stakeholder-approved policies before enabling additional data access. Test rules before deployment.
 
 The `.env` file is ignored by Git. Never add real project configuration or private credentials to source control.

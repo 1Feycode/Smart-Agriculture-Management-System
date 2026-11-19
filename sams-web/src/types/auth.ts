@@ -12,7 +12,7 @@ export interface AuthState {
 
 export interface AuthContextValue extends AuthState {
   login: (email: string, password: string, rememberSession: boolean) => Promise<UserRole>
-  register: (displayName: string, email: string, password: string) => Promise<boolean>
+  register: (displayName: string, email: string, password: string) => Promise<void>
   logout: () => Promise<void>
   resetPassword: (email: string) => Promise<void>
   resendVerificationEmail: () => Promise<void>

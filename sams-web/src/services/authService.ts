@@ -1,6 +1,6 @@
 import type { User } from 'firebase/auth'
 import { initializeFirebase } from '../lib/firebase'
-import { isUserRole, type UserRole } from '../types/user'
+import type { UserRole } from '../types/user'
 import { createFarmerProfileIfMissing, getUserProfile } from './userService'
 
 export interface ResolvedUserAccess {
@@ -48,7 +48,7 @@ export async function registerWithEmail(
   displayName: string,
   email: string,
   password: string,
-): Promise<boolean> {
+): Promise<void> {
   const { auth } = await getFirebaseServices()
   const authSdk = await import('firebase/auth')
   const credential = await authSdk.createUserWithEmailAndPassword(auth, email, password)
@@ -58,7 +58,7 @@ export async function registerWithEmail(
   } catch (error) {
     throw new AuthServiceError(
       'app/registration-profile-failed',
-      `Your Firebase account was created, but profile initialization failed. Do not retry registration; contact an administrator. ${firebaseAuthErrorMessage(error)}`,
+      `Your Firebase account was created, but profile initialization failed. Do not register again; contact the project owner. ${firebaseAuthErrorMessage(error)}`,
     )
   }
 
@@ -71,33 +71,21 @@ export async function registerWithEmail(
     )
   }
 
-  let token
-  try {
-    token = await authSdk.getIdTokenResult(credential.user, true)
-  } catch (error) {
-    throw new AuthServiceError(
-      'app/registration-provisioning-check-failed',
-      `Your Firebase account was created, but trusted role provisioning could not be checked. Do not retry registration; contact an administrator. ${firebaseAuthErrorMessage(error)}`,
-    )
-  }
-  if (token.claims.role !== 'farmer') return false
-
   try {
     await createFarmerProfileIfMissing(credential.user)
     const profile = await getUserProfile(credential.user.uid)
     if (profile.role !== 'farmer' || profile.status !== 'active') {
       throw new AuthServiceError(
         'app/profile-role-mismatch',
-        'The account profile does not match the trusted farmer role.',
+        'The account profile is not enabled for farmer access.',
       )
     }
   } catch (error) {
     throw new AuthServiceError(
       'app/registration-profile-sync-failed',
-      `Your Firebase account was created, but secure profile setup did not finish. Do not retry registration; contact an administrator. ${firebaseAuthErrorMessage(error)}`,
+      `Your Firebase account was created, but farmer profile setup did not finish. Do not register again; contact the project owner. ${firebaseAuthErrorMessage(error)}`,
     )
   }
-  return true
 }
 
 export async function signInWithEmail(
@@ -125,30 +113,21 @@ export async function resolveUserAccess(user: User): Promise<ResolvedUserAccess>
     )
   }
 
-  const { getIdTokenResult } = await import('firebase/auth')
-  const token = await getIdTokenResult(user)
-  if (!isUserRole(token.claims.role)) {
+  await createFarmerProfileIfMissing(user)
+  const profile = await getUserProfile(user.uid)
+  if (profile.role !== 'farmer') {
     throw new AuthServiceError(
-      'app/role-not-provisioned',
-      'Your account role has not been securely provisioned. Contact an administrator.',
+      'app/role-not-enabled',
+      'Only farmer accounts are enabled in this version of SAMS.',
     )
   }
-
-  const profile = await getUserProfile(user.uid)
   if (profile.status !== 'active') {
     throw new AuthServiceError(
       'app/account-inactive',
-      'This account is not active. Contact an administrator for assistance.',
+      'This account is not active. Contact the project owner for assistance.',
     )
   }
-  if (profile.role !== token.claims.role) {
-    throw new AuthServiceError(
-      'app/profile-role-mismatch',
-      'Your account role is not synchronized. Contact an administrator for assistance.',
-    )
-  }
-
-  return { role: token.claims.role, profile }
+  return { role: 'farmer', profile }
 }
 
 export async function requestPasswordReset(email: string): Promise<void> {
@@ -184,15 +163,14 @@ export function firebaseAuthErrorMessage(error: unknown): string {
     case 'auth/too-many-requests':
       return 'Too many attempts were made. Wait a little and try again.'
     case 'auth/user-disabled':
-      return 'This account is disabled. Contact an administrator for assistance.'
+      return 'This account is disabled. Contact the project owner for assistance.'
     case 'auth/email-not-verified':
-    case 'app/role-not-provisioned':
+    case 'app/role-not-enabled':
     case 'app/account-inactive':
     case 'app/profile-role-mismatch':
     case 'app/registration-profile-failed':
     case 'app/registration-verification-failed':
     case 'app/registration-profile-sync-failed':
-    case 'app/registration-provisioning-check-failed':
       return error instanceof Error ? error.message : 'Account access could not be verified.'
     case 'permission-denied':
       return 'Your account does not have permission to complete this request.'
