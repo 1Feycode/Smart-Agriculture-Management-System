@@ -14,6 +14,7 @@ import {
   Sprout,
   Store,
   Users,
+  UserCog,
   type LucideIcon,
 } from 'lucide-react'
 import type { UserRole } from './user'
@@ -82,6 +83,14 @@ export const dashboardNavigation: Record<DashboardRole, DashboardNavigation> = {
       { label: 'Activity log', href: '/admin/activity', icon: Activity },
       { label: 'Reports', href: '/admin/reports', icon: FileText },
       { label: 'System access', href: '/admin/access', icon: ShieldCheck },
+    ],
+  },
+  superadmin: {
+    label: 'Superadministrator',
+    basePath: '/superadmin/dashboard',
+    items: [
+      { label: 'Overview', href: '/superadmin/dashboard', icon: LayoutDashboard },
+      { label: 'User management', href: '/superadmin/users', icon: UserCog },
     ],
   },
 }

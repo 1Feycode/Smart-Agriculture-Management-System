@@ -18,7 +18,7 @@ import {
   resolveUserAccess,
   signInWithEmail,
 } from '../services/authService'
-import { updateUserProfile } from '../services/userService'
+import { observeUserProfile, updateUserProfile } from '../services/userService'
 import type { AuthContextValue, AuthState } from '../types/auth'
 import { isFirebaseConfigured } from '../lib/firebase'
 import { AuthContext } from './auth-context'
@@ -69,6 +69,62 @@ export function AuthProvider({ children }: PropsWithChildren) {
       unsubscribe()
     }
   }, [])
+
+  const userUid = state.user?.uid
+
+  useEffect(() => {
+    if (!userUid || !state.role) return
+
+    let active = true
+    let unsubscribe: (() => void) | undefined
+    void observeUserProfile(userUid, (profile) => {
+      if (!active) return
+      if (profile.status !== 'active') {
+        setState((current) => ({
+          ...current,
+          profile,
+          role: null,
+          profileLoading: false,
+          accessError: 'This account is not active. Contact the project owner for assistance.',
+        }))
+        return
+      }
+
+      setState((current) => ({
+        ...current,
+        profile,
+        role: profile.role,
+        profileLoading: false,
+        accessError: null,
+      }))
+    }, (error) => {
+      if (!active) return
+      setState((current) => ({
+        ...current,
+        profile: null,
+        role: null,
+        profileLoading: false,
+        accessError: firebaseAuthErrorMessage(error),
+      }))
+    }).then((stopObserving) => {
+      if (active) unsubscribe = stopObserving
+      else stopObserving()
+    }).catch((error: unknown) => {
+      if (!active) return
+      setState((current) => ({
+        ...current,
+        profile: null,
+        role: null,
+        profileLoading: false,
+        accessError: firebaseAuthErrorMessage(error),
+      }))
+    })
+
+    return () => {
+      active = false
+      unsubscribe?.()
+    }
+  }, [userUid, state.role])
 
   const login = useCallback(async (email: string, password: string, rememberSession: boolean) => {
     const { user, access } = await signInWithEmail(email, password, rememberSession)

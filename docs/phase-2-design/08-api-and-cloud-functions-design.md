@@ -6,10 +6,9 @@ SAMS is primarily an SDK-backed web application, not a conventional REST server.
 
 ## Current authentication implementation boundary
 
-- The React client supports email/password registration, login, password reset, email verification, and owner-scoped profile access. Current free-tier mode supports farmers only; the app reads the role from the Firestore profile.
-- Registration creates the Firebase Authentication identity and the user's own farmer profile. Firestore Rules require the profile UID and email to match the signed-in identity, allow only `role == 'farmer'`, and prevent role/status changes by the client. A verified existing account without a profile can create its farmer profile at sign-in.
-- Expert, data-manager, and administrator access is disabled. Any future elevated-role support must use a trusted provisioning design; browser clients must never assign elevated roles. Cloud Functions remain optional future work and are not required for the farmer-only flow.
-- The selected account deactivation policy is to disable the Firebase Auth account and revoke refresh tokens through a trusted Admin SDK process. The same process must set the profile status to inactive (and remove/revoke role claims as appropriate) so Firestore rules deny existing sessions. This administrative function is not implemented in the browser.
+- The React client supports email/password registration, login, password reset, email verification, and Firestore-profile authorization. Farmers self-register with the `farmer` role.
+- The superadmin page creates staff identities through a secondary Firebase Auth instance, creates their profiles through Firestore, and sends verification/password-reset emails. Firestore Rules allow only an active superadmin to list users or create/update another user's role/status. The initial superadmin is bootstrapped manually by the Firebase project owner.
+- Deactivation changes the profile status to `inactive`, which blocks SAMS access. It does not delete the Firebase Authentication identity or revoke its tokens; permanent Auth deletion is a manual Firebase Console operation in this no-server setup.
 - The browser requires `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, and `VITE_FIREBASE_APP_ID` in the local `sams-web/.env`. Use Firebase project web-app settings; do not commit actual values. Configure Firebase Auth email/password sign-in, email verification, and a password policy with a minimum of eight characters.
 - Firestore rules currently permit only owner-scoped active user profiles. All other collections remain denied until their schemas, access flows, and emulator tests are reviewed.
 - To run `npm run test:rules`, install the Firebase CLI separately (`npm install -g firebase-tools`); the CLI is intentionally not bundled as an application dependency.
@@ -18,8 +17,9 @@ SAMS is primarily an SDK-backed web application, not a conventional REST server.
 
 | Operation | Client path | Required rule |
 |---|---|---|
-| Sign up/sign in/sign out/password reset | Firebase Auth SDK | Authentication configuration; profiles are created through owner-only Firestore rules |
-| Read/update own profile | Firestore SDK | UID ownership; immutable role/status |
+| Farmer sign up/sign in/sign out/password reset | Firebase Auth SDK | Authentication configuration; owner may create only a farmer profile |
+| Create/manage staff roles and deactivate SAMS access | Secondary Firebase Auth + Firestore SDK | Active superadmin profile; cannot change own role/status |
+| Read/update own profile | Firestore SDK | UID ownership; role/status immutable to owner |
 | Create/read/update own farms and soil tests | Firestore SDK | Owner UID and linked-farm checks; allowed fields |
 | Read public crops/categories/fertilizers/verified prices | Firestore SDK | Explicit public/active/approved filtering |
 | Submit question and read own thread | Firestore SDK | Farmer ownership; expert assignment rules |
@@ -35,15 +35,15 @@ Client code is untrusted. Do not rely on hidden controls, frontend validation, C
 
 | Operation | Trusted mechanism | Why |
 |---|---|---|
-| Issue/change privileged role claims or disable accounts | Callable function or controlled Admin SDK operator tool | Admin SDK claim/account changes must never be exposed to an ordinary client |
-| Provision initial farmer role claim on registration (if using claims) | Auth `onCreate` function or controlled server-side provisioning | Client cannot assign signed claims; handle partial failures idempotently |
+| Delete another Firebase Auth identity or revoke its refresh tokens | Admin SDK process or Firebase Console operator | Firebase Auth client SDK cannot administer another user's identity |
+| Use signed custom claims instead of profile roles | Callable function or controlled Admin SDK operator tool | Custom Auth claims must be signed by a trusted environment |
 | Create event notifications for answers/reviews/status changes | Firestore-triggered function, or trusted service process | Prevent spoofing recipient/content and ensure idempotency |
 | Secure weather proxy/cache | HTTPS/callable function only if provider key, shared quota, or private credentials require it | Secrets cannot be placed in React; avoid it if provider has no key and policy allows direct calls |
 | Compute trusted fertilizer rates | Callable function only after qualified approval of formula/rules | Protect calculation inputs, rule version, audit trail and rate output; do not calculate unsupported rates |
 | Large/private report generation | Function only if scale or policy makes client export unsafe | Routine bounded CSV is cheaper and simpler in browser |
 | Scheduled cleanup/validation | Optional scheduled function | Only after retention policy is approved and function hosting cost is acceptable |
 
-Cloud Functions deployment may require a billing-enabled Firebase/Google Cloud plan even when invocation falls within a no-cost quota. The current free-tier application therefore enables farmers only and does not provide privileged role provisioning. Before enabling elevated roles or server-backed workflows in a future phase, verify plan eligibility, billing requirements, and pricing, then approve a trusted provisioning design.
+Cloud Functions deployment may require a billing-enabled Firebase/Google Cloud plan even when invocation falls within a no-cost quota. The current role-management flow uses Authentication, Firestore, and Security Rules without Functions, subject to free-tier quotas. Before adding hard Auth deletion, token revocation, or other server-backed workflows, verify plan eligibility, billing requirements, and pricing.
 
 ## Proposed functions
 
@@ -58,7 +58,7 @@ All signatures below are illustrative TypeScript contracts, not deployed code. C
 - Auth/role: Trigger uses event identity; callable requires `auth.uid` equals target UID.
 - Errors: retry-safe; partial profile failure is observable and recoverable; no success-shaped fallback.
 - Free-tier impact: Auth trigger invocation and Firestore writes; deployment plan may require billing.
-- Client alternative: Direct profile creation only if authorization roles are Firestore-backed with safe farmer-only create rules and no privileged claims. Do not emulate claims in client.
+- Client alternative: Direct Firestore profile management is used in the current free-tier design only because Rules restrict public creates to farmers and privileged changes to an active superadmin. Do not emulate custom claims in the client.
 - Related FR: FR-001–004, FR-010–011.
 
 ```ts

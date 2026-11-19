@@ -7,7 +7,7 @@ Run all cases against Firebase Emulator Suite with isolated test data and real S
 | SEC-001 | Unauthenticated access | Read private user, farm, soil, recommendation, question, notification; attempt create | All denied; only explicitly public/approved records readable | Critical |
 | SEC-002 | Farmer reads another farmer farm | Farmer A queries/gets Farmer B farm | Denied for get and list; own farm remains readable | Critical |
 | SEC-003 | Farmer modifies another farmer record | Update B farm, soil test, recommendation, question | All writes denied; no record changes | Critical |
-| SEC-004 | Farmer changes own role | Update own `role`, `status`, UID or custom claim through client | Denied; no privilege change | Critical |
+| SEC-004 | User changes own role | Update own `role` or `status` through client | Denied; no privilege change | Critical |
 | SEC-005 | Expert reads unauthorized recommendation | Expert gets a farmer-private record not assigned/open | Denied; assigned/open permitted records work | Critical |
 | SEC-006 | Data manager modifies crop | Create/update/delete crop using data-manager claim | Denied; approved admin path only | High |
 | SEC-007 | Guest reads private records | Direct get/list of private user, farm, soil, Q&A, notifications | Denied | Critical |
@@ -15,11 +15,12 @@ Run all cases against Firebase Emulator Suite with isolated test data and real S
 | SEC-009 | Oversized file upload | Upload >2 MiB supported image | Denied by Storage Rules | High |
 | SEC-010 | Invalid file-type upload | Upload executable/PDF or mismatched content type | Denied by Storage Rules; MIME spoofing risk noted | High |
 | SEC-011 | Direct Firestore access | Bypass React and call SDK directly with altered owner/role fields | Rules deny all prohibited operations | Critical |
-| SEC-012 | Role claim absent/unknown | Authenticated account lacks supported role claim | Private data and staff actions denied | Critical |
+| SEC-012 | Role absent/unknown/inactive | Authenticated account lacks a valid active profile role | Protected routes and staff actions denied | Critical |
 | SEC-013 | Forged public flags | Farmer creates a crop or price marked public/verified | Denied | Critical |
 | SEC-014 | Historical price alteration | Data manager changes amount, observed date, product, source or deletes | Denied; correction must be new linked observation | Critical |
 | SEC-015 | Notification spoofing | Client creates notification or changes recipient/body | Denied; recipient may only update readAt | High |
 | SEC-016 | Activity-log tampering | Client creates/updates/deletes audit record | Denied | Critical |
+| SEC-017 | Superadmin user management | Farmer creates staff, changes another user's role, or edits own role/status | Denied; only active superadmin may manage other profiles | Critical |
 | SEC-017 | Question ownership spoof | Farmer creates question with another owner UID or assigned expert | Denied | Critical |
 | SEC-018 | Cross-owner soil association | Farmer creates soil record pointing to another owner farm | Denied | Critical |
 | SEC-019 | Expert assignment abuse | Expert changes question assignment or edits question body/owner | Denied | High |

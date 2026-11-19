@@ -52,7 +52,7 @@ flowchart LR
 | Cloud Functions (optional) | Narrow privileged tasks: role claim provisioning, secret weather proxy/cache, trusted recommendation calculation, event-generated notifications | Routine reads/writes that client rules can safely govern |
 | Firebase Hosting | Static React bundle, HTTPS, SPA rewrite | Dynamic API execution |
 
-Use an authoritative, server-issued custom claim for privileged roles. Profile documents may show role labels but are not the source of authorization truth. A controlled operator process or callable function using Admin SDK assigns claims; no client may self-assign. Verify the claims approach, account-recovery and bootstrap process with stakeholders before deployment.
+The current free-tier application uses `users/{uid}.role` as its authorization source, protected by Firestore Rules: farmers can self-create only farmer profiles, and an active superadmin can manage other users. The first superadmin is bootstrapped by the Firebase project owner in Console. A future migration to server-issued custom claims would require a separately approved trusted backend; clients must never assign themselves elevated roles.
 
 ## Component communication and module data flows
 

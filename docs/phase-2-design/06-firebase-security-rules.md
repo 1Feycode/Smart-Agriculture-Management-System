@@ -6,8 +6,8 @@ The rules below are a restrictive **design baseline**, not a production certific
 
 ### Trust model
 
-- Current free-tier application mode supports farmers only. Authorization reads `users/{uid}.role`; Firestore Rules allow a signed-in user to create only their own profile with `role == 'farmer'`, and prevent role/status changes afterward.
-- Expert, data-manager, and administrator access is disabled. Enabling elevated roles requires a trusted provisioning design; do not accept elevated roles from the browser.
+- Current free-tier application authorization reads `users/{uid}.role`. Farmers can create only their own `farmer` profile. An active `superadmin` can create profiles and change roles/status on other user profiles; owners cannot change their own role or status.
+- Bootstrap the first `superadmin` manually as the Firebase project owner. The management page can assign roles afterward. Deactivation sets the profile status to `inactive`; it blocks SAMS access but does not delete the Firebase Authentication identity or revoke tokens.
 - Public data means only explicitly public, active, approved records. Firestore queries must include filters compatible with Rules; Rules are not query filters.
 - Historical market-price amount/product/market/source/date are immutable. Corrections create new linked observations. Verification metadata may be changed only by authorized data managers.
 - Activity log and notification creation are server-only. Clients can only mark their own notification read.
@@ -15,7 +15,7 @@ The rules below are a restrictive **design baseline**, not a production certific
 
 ### Current application rules scope
 
-The executable rules file at `sams-web/firestore.rules` currently implements only the user-profile contract: owner-only reads of active profiles, owner-created farmer-only profiles, display-name-only updates, and no deletes. All other collections remain denied. Location editing is intentionally excluded until its map schema is approved. The larger rule set below remains a future design proposal and must not be copied into production without schema review, emulator coverage, and security approval.
+The executable rules file at `sams-web/firestore.rules` implements the user-profile contract: farmer self-registration, superadmin-only user listing and role/status management, owner display-name updates, and soft deactivation. Profile deletion and all other collections remain denied. Location editing is intentionally excluded until its map schema is approved. The larger rule set below remains a future design proposal and must not be copied into production without schema review, emulator coverage, and security approval.
 
 ## Firestore Security Rules
 
@@ -517,6 +517,6 @@ service firebase.storage {
 1. Reconcile the schema and state names with document 05 and the code.
 2. Deploy to a non-production Firebase project and run Emulator Suite tests.
 3. Verify both positive and negative role/ownership queries; verify lists fail when query constraints cannot prove access.
-4. Confirm custom-claim provisioning, disabled-account token revocation, and recovery access path.
+4. Confirm first-superadmin bootstrap, superadmin-only role changes, soft deactivation behavior, and recovery access path.
 5. Confirm Storage cross-service Firestore Rules access is enabled and test under the Storage emulator.
 6. Deploy restrictive Rules before releasing any client version; monitor permission-denied and quota outcomes.

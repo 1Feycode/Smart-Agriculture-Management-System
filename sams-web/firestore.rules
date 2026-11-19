@@ -6,41 +6,81 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function superadmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'superadmin'
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'active';
+    }
+
     function validDisplayName(value) {
       return value is string && value.size() > 0 && value.size() <= 120;
     }
 
+    function validRole(value) {
+      return value in ['farmer', 'expert', 'dataManager', 'admin', 'superadmin'];
+    }
+
+    function validProfile(data, uid) {
+      return data.keys().hasAll([
+          'uid', 'displayName', 'email', 'role', 'status', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'displayName', 'email', 'role', 'status', 'createdAt', 'updatedAt'
+        ])
+        && data.uid == uid
+        && validDisplayName(data.displayName)
+        && data.email is string
+        && validRole(data.role)
+        && data.status in ['active', 'inactive']
+        && data.createdAt is timestamp
+        && data.updatedAt == request.time;
+    }
+
     match /users/{uid} {
       allow get: if signedIn()
-        && request.auth.uid == uid
-        && (!exists(/databases/$(database)/documents/users/$(uid))
-          || resource.data.status == 'active');
-      allow list: if false;
+        && (request.auth.uid == uid || superadmin());
+      allow list: if superadmin();
 
-      allow create: if signedIn()
-        && request.auth.uid == uid
-        && request.resource.data.keys().hasAll([
-          'uid', 'displayName', 'email', 'role', 'status', 'createdAt', 'updatedAt'
-        ])
-        && request.resource.data.keys().hasOnly([
-          'uid', 'displayName', 'email', 'role', 'status', 'createdAt', 'updatedAt'
-        ])
-        && request.resource.data.uid == uid
-        && validDisplayName(request.resource.data.displayName)
-        && request.resource.data.email is string
-        && request.resource.data.email == request.auth.token.email
-        && request.resource.data.role == 'farmer'
+      allow create: if validProfile(request.resource.data, uid)
         && request.resource.data.status == 'active'
         && request.resource.data.createdAt == request.time
-        && request.resource.data.updatedAt == request.time;
+        && (
+          (
+            signedIn()
+            && request.auth.uid == uid
+            && request.resource.data.email == request.auth.token.email
+            && request.resource.data.role == 'farmer'
+          )
+          || (
+            superadmin()
+            && request.auth.uid != uid
+            && request.resource.data.role != 'farmer'
+          )
+        );
 
       allow update: if signedIn()
-        && request.auth.uid == uid
-        && resource.data.status == 'active'
-        && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['displayName', 'updatedAt'])
-        && validDisplayName(request.resource.data.displayName)
-        && request.resource.data.updatedAt == request.time;
+        && (
+          (
+            request.auth.uid == uid
+            && resource.data.status == 'active'
+            && request.resource.data.status == 'active'
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['displayName', 'updatedAt'])
+            && validDisplayName(request.resource.data.displayName)
+            && request.resource.data.updatedAt == request.time
+          )
+          || (
+            superadmin()
+            && request.auth.uid != uid
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['role', 'status', 'updatedAt'])
+            && validRole(request.resource.data.role)
+            && request.resource.data.status in ['active', 'inactive']
+            && request.resource.data.createdAt == resource.data.createdAt
+            && request.resource.data.updatedAt == request.time
+          )
+        );
 
       allow delete: if false;
     }

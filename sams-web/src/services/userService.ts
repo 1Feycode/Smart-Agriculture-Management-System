@@ -1,7 +1,7 @@
 import type { Timestamp } from 'firebase/firestore'
 import type { User } from 'firebase/auth'
 import { initializeFirebase } from '../lib/firebase'
-import { isUserRole, type UserProfile } from '../types/user'
+import { isUserRole, type ManagedUserRole, type UserProfile, type UserRole } from '../types/user'
 
 export async function getUserProfile(uid: string): Promise<UserProfile> {
   const services = await getFirebaseServices()
@@ -15,6 +15,32 @@ export async function getUserProfile(uid: string): Promise<UserProfile> {
   }
 
   return parseUserProfile(profileSnapshot.data(), uid)
+}
+
+export async function observeUserProfile(
+  uid: string,
+  onChange: (profile: UserProfile) => void,
+  onError: (error: Error) => void,
+): Promise<() => void> {
+  const services = await getFirebaseServices()
+  const firestoreSdk = await import('firebase/firestore')
+
+  return firestoreSdk.onSnapshot(
+    firestoreSdk.doc(services.firestore, 'users', uid),
+    (profileSnapshot) => {
+      if (!profileSnapshot.exists()) {
+        onError(new Error('Your account profile is not available.'))
+        return
+      }
+
+      try {
+        onChange(parseUserProfile(profileSnapshot.data(), uid))
+      } catch (error) {
+        onError(error instanceof Error ? error : new Error('Your account profile is invalid.'))
+      }
+    },
+    onError,
+  )
 }
 
 export async function createFarmerProfileIfMissing(user: User): Promise<void> {
@@ -41,6 +67,51 @@ export async function createFarmerProfileIfMissing(user: User): Promise<void> {
       createdAt: firestoreSdk.serverTimestamp(),
       updatedAt: firestoreSdk.serverTimestamp(),
     })
+  })
+}
+
+export async function listUserProfiles(): Promise<UserProfile[]> {
+  const services = await getFirebaseServices()
+  const firestoreSdk = await import('firebase/firestore')
+  const snapshot = await firestoreSdk.getDocs(
+    firestoreSdk.collection(services.firestore, 'users'),
+  )
+
+  return snapshot.docs
+    .map((profile) => parseUserProfile(profile.data(), profile.id))
+    .sort((left, right) => left.displayName.localeCompare(right.displayName))
+}
+
+export async function createManagedUserProfile(
+  profile: Pick<UserProfile, 'uid' | 'displayName' | 'email'> & { role: ManagedUserRole },
+): Promise<void> {
+  const services = await getFirebaseServices()
+  const firestoreSdk = await import('firebase/firestore')
+  const now = firestoreSdk.serverTimestamp()
+
+  await firestoreSdk.setDoc(
+    firestoreSdk.doc(services.firestore, 'users', profile.uid),
+    {
+      ...profile,
+      status: 'active',
+      createdAt: now,
+      updatedAt: now,
+    },
+  )
+}
+
+export async function updateManagedUserAccess(
+  uid: string,
+  role: UserRole,
+  status: 'active' | 'inactive',
+): Promise<void> {
+  const services = await getFirebaseServices()
+  const firestoreSdk = await import('firebase/firestore')
+
+  await firestoreSdk.updateDoc(firestoreSdk.doc(services.firestore, 'users', uid), {
+    role,
+    status,
+    updatedAt: firestoreSdk.serverTimestamp(),
   })
 }
 

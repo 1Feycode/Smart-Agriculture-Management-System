@@ -11,6 +11,7 @@ import { NotFoundPage } from '../pages/NotFoundPage'
 import { ProfilePage } from '../pages/ProfilePage'
 import { PublicPlaceholderPage } from '../pages/PublicPlaceholderPage'
 import { RouteErrorPage } from '../pages/RouteErrorPage'
+import { SuperadminUsersPage } from '../pages/SuperadminUsersPage'
 import { ProtectedRoute } from './ProtectedRoute'
 
 export const router = createBrowserRouter([
@@ -110,6 +111,21 @@ export const router = createBrowserRouter([
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: 'dashboard', element: <DashboardPlaceholderPage role="admin" /> },
       { path: '*', element: <DashboardPlaceholderPage role="admin" /> },
+    ],
+  },
+  {
+    path: '/superadmin',
+    element: (
+      <ProtectedRoute role="superadmin">
+        <DashboardLayout role="superadmin" />
+      </ProtectedRoute>
+    ),
+    errorElement: <RouteErrorPage />,
+    children: [
+      { index: true, element: <Navigate to="dashboard" replace /> },
+      { path: 'dashboard', element: <DashboardPlaceholderPage role="superadmin" /> },
+      { path: 'users', element: <SuperadminUsersPage /> },
+      { path: '*', element: <DashboardPlaceholderPage role="superadmin" /> },
     ],
   },
 ])

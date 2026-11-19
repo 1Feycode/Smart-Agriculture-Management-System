@@ -4,11 +4,11 @@ SAMS is a responsive agricultural information platform foundation built with Rea
 
 ## Current Phase 2 scope
 
-The app includes email/password authentication screens, email verification, password reset, a shared authentication context, profile view/edit, and a protected farmer dashboard shell. Farmers can create their own profile; Firestore Rules restrict client-created profiles to the farmer role. Expert, data-manager, and administrator access is not enabled. Business modules and dashboard data remain placeholders.
+The app includes email/password authentication, email verification, password reset, profile view/edit, role-protected dashboard shells, public farmer registration, and a superadmin user-management page. Business modules and dashboard data remain placeholders.
 
-The app reads the role from the owner-scoped Firestore profile. The client can create only its own `farmer` profile, and cannot change its role or account status afterward. The current Firestore rules deny access to all other collections. Firebase Storage rules deny all access.
+The app reads roles from Firestore user profiles. Farmers can create only their own farmer profile. An active superadmin can create staff accounts, assign roles, and deactivate or reactivate other accounts. Firestore Rules prevent users from changing their own role and deny access to all other collections. Firebase Storage rules deny all access.
 
-This setup avoids Cloud Functions and works with Firebase Authentication and Firestore on the free tier, subject to their quotas. Anyone can register as a farmer; elevated roles are intentionally unavailable. Existing accounts created before this change can create their own farmer profile at sign-in after verifying their email.
+This setup avoids Cloud Functions and uses Firebase Authentication and Firestore, subject to free-tier quotas. Deactivation blocks SAMS access but does not delete the Firebase Authentication account or revoke its tokens. A project owner must use Firebase Console to permanently delete an Auth identity.
 
 ## Requirements
 
@@ -35,14 +35,23 @@ npm run test:rules
 
 `test:rules` uses the Firestore Emulator Suite and requires the Firebase CLI (`npm install -g firebase-tools`).
 
-## Create a farmer account
+## Set up the first superadmin
 
 1. Enable **Email/Password** in Firebase Authentication and configure email verification.
-2. Deploy the updated `sams-web/firestore.rules` to the same Firebase project used by the web app.
-3. Open the public **Register** page and enter the farmer's name, email, and password.
-4. The app creates the Authentication account and its own farmer profile. The farmer verifies their email and signs in to reach `/farmer/dashboard`.
+2. Deploy `sams-web/firestore.rules` to the Firebase project used by the web app.
+3. Register the account that will be the first superadmin through the public **Register** page and verify its email.
+4. In Firebase Console, find that account under **Authentication → Users** and copy its UID.
+5. In **Firestore Database → users**, open the document with that UID and change its `role` from `farmer` to `superadmin`; make sure `status` is `active`. This one-time bootstrap must be done by the project owner in Firebase Console.
+6. Sign out and back in. Open `/superadmin/users` to manage staff accounts.
 
-The app and Firestore Rules do not allow self-registration as an expert, data manager, or administrator. Do not change a user's role manually in Firestore: elevated roles are not supported in this free-tier setup.
+## Create and manage accounts
+
+- **Farmers:** register themselves at `/register`, verify their email, then sign in. The app assigns only the `farmer` role during public registration.
+- **Staff:** a superadmin uses `/superadmin/users` to create an expert, data manager, administrator, or additional superadmin. Firebase sends verification and password-reset emails; the new user verifies their address and sets a password.
+- **Assign roles:** use the role selector on the superadmin page. Users cannot change their own roles.
+- **Deactivate/reactivate:** use the status action on the superadmin page. Deactivation blocks SAMS access but keeps the Firebase Auth account. Permanent Auth deletion is manual in Firebase Console without trusted server code.
+
+Do not edit role fields in Firestore for routine management. The initial superadmin bootstrap is the only manual role change.
 ## Deploy the frontend to Vercel
 
 The React/Vite frontend can be deployed on Vercel while Firebase provides the backend services. Firebase Hosting is also configured as an alternative, but is not required when using Vercel.

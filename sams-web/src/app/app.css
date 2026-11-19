@@ -1471,6 +1471,27 @@
   background: #fff;
 }
 
+.user-management-select {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #d6e0d8;
+  border-radius: 9px;
+  color: var(--color-ink);
+  background: #fff;
+}
+
+.user-management-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.user-management-actions .button {
+  min-height: 36px;
+  padding: 7px 10px;
+  font-size: 0.75rem;
+}
+
 .form-field input[aria-invalid="true"] {
   border-color: #bf6054;
 }

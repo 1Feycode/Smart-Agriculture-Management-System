@@ -42,6 +42,22 @@ export function initializeFirebase(): Promise<FirebaseServices> | null {
   return servicesPromise
 }
 
+export async function initializeSecondaryFirebaseAuth(): Promise<Auth> {
+  const services = await initializeFirebase()
+  if (!services) {
+    throw new Error('Firebase is not configured. Add the required VITE_FIREBASE values to sams-web/.env.')
+  }
+
+  const [appSdk, authSdk] = await Promise.all([
+    import('firebase/app'),
+    import('firebase/auth'),
+  ])
+  const appName = 'sams-managed-user-auth'
+  const app = appSdk.getApps().find((candidate) => candidate.name === appName)
+    ?? appSdk.initializeApp(services.app.options, appName)
+  return authSdk.getAuth(app)
+}
+
 export function initializeFirebaseStorage(): Promise<FirebaseStorage> | null {
   if (!storageBucket) return null
 

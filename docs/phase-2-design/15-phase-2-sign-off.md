@@ -34,7 +34,7 @@
 
 1. Provide the original SRS document and confirm all FR/NFR/BR/UC/AC mappings.
 2. Confirm identity/profile fields, locations, supported units/currencies and retention/deletion policy.
-3. Confirm role provisioning, custom-claim lifecycle, admin bootstrap, account deactivation and recovery.
+3. Confirm Firestore-backed role management, first-superadmin bootstrap, soft deactivation and recovery.
 4. Approve weather data source, free-tier terms, attribution, alert source, cache freshness and coordinate consent.
 5. Obtain qualified, versioned fertilizer rules, input thresholds, application instructions, safety text and decision ownership. No rate may be released without this approval.
 6. Confirm market source/verification separation-of-duties, public visibility of unverified prices, stale threshold and correction policy.
