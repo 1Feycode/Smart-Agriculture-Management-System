@@ -14,9 +14,9 @@ export function Sidebar({ role, items }: SidebarProps) {
     <aside className="sidebar">
       <Link to="/" className="brand brand--sidebar" aria-label="SAMS home">
         <span className="brand__mark" aria-hidden="true"><Leaf size={20} /></span>
-        <span className="brand__name"><strong>SAMS</strong><small>{role.replace('-', ' ')}</small></span>
+        <span className="brand__name"><strong>SAMS</strong><small>{dashboardNavigation[role].label}</small></span>
       </Link>
-      <nav className="sidebar__nav" aria-label={`${role} navigation`}>
+      <nav className="sidebar__nav" aria-label={`${dashboardNavigation[role].label} navigation`}>
         {items.map(({ label, href, icon: Icon }) => (
           <NavLink
             key={href}

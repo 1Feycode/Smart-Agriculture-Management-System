@@ -25,7 +25,7 @@ export function MobileNavigation({ role, items }: MobileNavigationProps) {
         {open ? <X size={21} /> : <Menu size={21} />}
       </button>
       {open && (
-        <nav id="dashboard-mobile-menu" className="mobile-navigation__menu" aria-label={`${role} navigation`}>
+        <nav id="dashboard-mobile-menu" className="mobile-navigation__menu" aria-label={`${dashboardNavigation[role].label} navigation`}>
           {items.map(({ label, href, icon: Icon }) => (
             <NavLink
               key={href}

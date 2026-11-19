@@ -16,8 +16,9 @@ import {
   Users,
   type LucideIcon,
 } from 'lucide-react'
+import type { UserRole } from './user'
 
-export type DashboardRole = 'farmer' | 'expert' | 'data-manager' | 'administrator'
+export type DashboardRole = UserRole
 
 export interface NavigationItem {
   label: string
@@ -34,9 +35,9 @@ interface DashboardNavigation {
 export const dashboardNavigation: Record<DashboardRole, DashboardNavigation> = {
   farmer: {
     label: 'Farmer',
-    basePath: '/farmer',
+    basePath: '/farmer/dashboard',
     items: [
-      { label: 'Overview', href: '/farmer', icon: LayoutDashboard },
+      { label: 'Overview', href: '/farmer/dashboard', icon: LayoutDashboard },
       { label: 'Farms', href: '/farmer/farms', icon: MapPin },
       { label: 'Crop information', href: '/farmer/crops', icon: Leaf },
       { label: 'Soil tests', href: '/farmer/soil-tests', icon: FlaskConical },
@@ -49,31 +50,31 @@ export const dashboardNavigation: Record<DashboardRole, DashboardNavigation> = {
   },
   expert: {
     label: 'Agricultural Expert',
-    basePath: '/expert',
+    basePath: '/expert/dashboard',
     items: [
-      { label: 'Overview', href: '/expert', icon: LayoutDashboard },
+      { label: 'Overview', href: '/expert/dashboard', icon: LayoutDashboard },
       { label: 'Question inbox', href: '/expert/questions', icon: MessageCircleQuestion },
       { label: 'Recommendations', href: '/expert/recommendations', icon: Sprout },
       { label: 'Soil records', href: '/expert/soil-tests', icon: FlaskConical },
       { label: 'Notifications', href: '/expert/notifications', icon: Bell },
     ],
   },
-  'data-manager': {
+  dataManager: {
     label: 'Agricultural Data Manager',
-    basePath: '/data',
+    basePath: '/data/dashboard',
     items: [
-      { label: 'Overview', href: '/data', icon: LayoutDashboard },
+      { label: 'Overview', href: '/data/dashboard', icon: LayoutDashboard },
       { label: 'Markets', href: '/data/markets', icon: Store },
       { label: 'Products', href: '/data/products', icon: Sprout },
       { label: 'Market prices', href: '/data/prices', icon: Database },
       { label: 'Reports', href: '/data/reports', icon: FileText },
     ],
   },
-  administrator: {
+  admin: {
     label: 'Administrator',
-    basePath: '/admin',
+    basePath: '/admin/dashboard',
     items: [
-      { label: 'Overview', href: '/admin', icon: LayoutDashboard },
+      { label: 'Overview', href: '/admin/dashboard', icon: LayoutDashboard },
       { label: 'Users', href: '/admin/users', icon: Users },
       { label: 'Crop information', href: '/admin/crops', icon: Leaf },
       { label: 'Fertilizers', href: '/admin/fertilizers', icon: Sprout },

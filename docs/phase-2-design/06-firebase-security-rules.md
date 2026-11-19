@@ -13,6 +13,10 @@ The rules below are a restrictive **design baseline**, not a production certific
 - Activity log and notification creation are server-only. Clients can only mark their own notification read.
 - All deletes are denied for historical collections; use controlled archive/status transitions. Retention and deletion process is **To be confirmed with stakeholders**.
 
+### Current application rules scope
+
+The executable rules file at `sams-web/firestore.rules` currently implements only the user-profile contract: owner-only reads of active profiles, farmer-claim-gated profile creation, display-name-only updates, and no deletes. All other collections remain denied. Location editing is intentionally excluded until its map schema is approved. The larger rule set below remains a design proposal and must not be copied into production without schema review, emulator coverage, and security approval.
+
 ## Firestore Security Rules
 
 Save the following as `docs/phase-2-design/firestore.rules`. These rules use only v2 syntax and role/ownership allowlists; exact field contracts must match document 05.

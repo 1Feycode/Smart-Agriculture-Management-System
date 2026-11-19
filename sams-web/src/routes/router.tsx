@@ -1,14 +1,17 @@
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, Navigate } from 'react-router-dom'
 import { DashboardLayout } from '../layouts/DashboardLayout'
 import { PublicLayout } from '../layouts/PublicLayout'
 import { AboutPage } from '../pages/AboutPage'
 import { AccountEntryPage } from '../pages/AccountEntryPage'
+import { AccessDeniedPage } from '../pages/AccessDeniedPage'
 import { CropInformationPage } from '../pages/CropInformationPage'
 import { DashboardPlaceholderPage } from '../pages/DashboardPlaceholderPage'
 import { HomePage } from '../pages/HomePage'
 import { NotFoundPage } from '../pages/NotFoundPage'
+import { ProfilePage } from '../pages/ProfilePage'
 import { PublicPlaceholderPage } from '../pages/PublicPlaceholderPage'
 import { RouteErrorPage } from '../pages/RouteErrorPage'
+import { ProtectedRoute } from './ProtectedRoute'
 
 export const router = createBrowserRouter([
   {
@@ -22,6 +25,14 @@ export const router = createBrowserRouter([
       { path: 'login', element: <AccountEntryPage mode="login" /> },
       { path: 'register', element: <AccountEntryPage mode="register" /> },
       { path: 'forgot-password', element: <AccountEntryPage mode="forgot-password" /> },
+      {
+        path: 'profile',
+        element: (
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        ),
+      },
       {
         path: 'weather',
         element: (
@@ -40,44 +51,65 @@ export const router = createBrowserRouter([
           />
         ),
       },
-      { path: 'access-denied', element: <PublicPlaceholderPage title="Access denied" description="This route is reserved for a future access experience." /> },
+      { path: 'access-denied', element: <AccessDeniedPage /> },
+      { path: 'not-found', element: <NotFoundPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },
   {
     path: '/farmer',
-    element: <DashboardLayout role="farmer" />,
+    element: (
+      <ProtectedRoute role="farmer">
+        <DashboardLayout role="farmer" />
+      </ProtectedRoute>
+    ),
     errorElement: <RouteErrorPage />,
     children: [
-      { index: true, element: <DashboardPlaceholderPage role="farmer" /> },
+      { index: true, element: <Navigate to="dashboard" replace /> },
+      { path: 'dashboard', element: <DashboardPlaceholderPage role="farmer" /> },
       { path: '*', element: <DashboardPlaceholderPage role="farmer" /> },
     ],
   },
   {
     path: '/expert',
-    element: <DashboardLayout role="expert" />,
+    element: (
+      <ProtectedRoute role="expert">
+        <DashboardLayout role="expert" />
+      </ProtectedRoute>
+    ),
     errorElement: <RouteErrorPage />,
     children: [
-      { index: true, element: <DashboardPlaceholderPage role="expert" /> },
+      { index: true, element: <Navigate to="dashboard" replace /> },
+      { path: 'dashboard', element: <DashboardPlaceholderPage role="expert" /> },
       { path: '*', element: <DashboardPlaceholderPage role="expert" /> },
     ],
   },
   {
     path: '/data',
-    element: <DashboardLayout role="data-manager" />,
+    element: (
+      <ProtectedRoute role="dataManager">
+        <DashboardLayout role="dataManager" />
+      </ProtectedRoute>
+    ),
     errorElement: <RouteErrorPage />,
     children: [
-      { index: true, element: <DashboardPlaceholderPage role="data-manager" /> },
-      { path: '*', element: <DashboardPlaceholderPage role="data-manager" /> },
+      { index: true, element: <Navigate to="dashboard" replace /> },
+      { path: 'dashboard', element: <DashboardPlaceholderPage role="dataManager" /> },
+      { path: '*', element: <DashboardPlaceholderPage role="dataManager" /> },
     ],
   },
   {
     path: '/admin',
-    element: <DashboardLayout role="administrator" />,
+    element: (
+      <ProtectedRoute role="admin">
+        <DashboardLayout role="admin" />
+      </ProtectedRoute>
+    ),
     errorElement: <RouteErrorPage />,
     children: [
-      { index: true, element: <DashboardPlaceholderPage role="administrator" /> },
-      { path: '*', element: <DashboardPlaceholderPage role="administrator" /> },
+      { index: true, element: <Navigate to="dashboard" replace /> },
+      { path: 'dashboard', element: <DashboardPlaceholderPage role="admin" /> },
+      { path: '*', element: <DashboardPlaceholderPage role="admin" /> },
     ],
   },
 ])

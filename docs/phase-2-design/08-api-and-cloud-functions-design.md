@@ -4,6 +4,16 @@
 
 SAMS is primarily an SDK-backed web application, not a conventional REST server. Use Firebase Authentication, Firestore and Storage SDK calls directly from React only for operations protected by Rules. Keep functions minimal. The original SRS was unavailable; role assignment, supported report audience, weather provider, and deployment billing policy require stakeholder confirmation.
 
+## Current authentication implementation boundary
+
+- The React client supports email/password registration, login, password reset, email verification, profile access and role-claim checks. A profile role is never accepted as authorization.
+- Registration can create the Firebase Authentication identity and send its verification email, but does not assign a role. If a trusted `farmer` custom claim is not available, the UI reports that provisioning is pending and protected access remains denied.
+- No Cloud Function is included or deployed. A trusted Auth user-created trigger must assign only the default `farmer` claim and provision the initial profile before registrations can complete. Deploy it only after the project owner approves the billing-enabled plan and cost implications. Accounts created while provisioning is unavailable will need controlled Admin SDK backfill; deploying an `onCreate` trigger later will not replay earlier Auth creation events.
+- The selected account deactivation policy is to disable the Firebase Auth account and revoke refresh tokens through a trusted Admin SDK process. The same process must set the profile status to inactive (and remove/revoke role claims as appropriate) so Firestore rules deny existing sessions. This administrative function is not implemented in the browser.
+- The browser requires `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, and `VITE_FIREBASE_APP_ID` in the local `sams-web/.env`. Use Firebase project web-app settings; do not commit actual values. Configure Firebase Auth email/password sign-in, email verification, and a password policy with a minimum of eight characters.
+- Firestore rules currently permit only owner-scoped active user profiles. All other collections remain denied until their schemas, access flows, and emulator tests are reviewed.
+- To run `npm run test:rules`, install the Firebase CLI separately (`npm install -g firebase-tools`); the CLI is intentionally not bundled as an application dependency.
+
 ## Operations that can use React + Firebase SDK + Rules
 
 | Operation | Client path | Required rule |
