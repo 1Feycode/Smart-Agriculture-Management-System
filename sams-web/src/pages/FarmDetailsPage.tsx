@@ -4,7 +4,9 @@ import { ConfirmDialog } from '../components/common/ConfirmDialog'
 import { ErrorState } from '../components/common/ErrorState'
 import { LoadingState } from '../components/common/LoadingState'
 import { StatusBadge } from '../components/common/StatusBadge'
+import { listPublicCrops } from '../services/cropService'
 import { farmErrorMessage, getFarm, setFarmStatus } from '../services/farmService'
+import type { Crop } from '../types/crop'
 import type { Farm } from '../types/farm'
 
 export function FarmDetailsPage() {
@@ -15,6 +17,9 @@ export function FarmDetailsPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [confirmingArchive, setConfirmingArchive] = useState(false)
+  const [availableCrops, setAvailableCrops] = useState<Crop[]>([])
+  const [cropLoadError, setCropLoadError] = useState<string | null>(null)
+  const [cropLoadFarmId, setCropLoadFarmId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!farmId) return
@@ -38,6 +43,27 @@ export function FarmDetailsPage() {
       active = false
     }
   }, [farmId])
+
+  useEffect(() => {
+    if (!farm?.cropIds?.length) return
+
+    let active = true
+    void listPublicCrops()
+      .then((records) => {
+        if (!active) return
+        setAvailableCrops(records)
+        setCropLoadError(null)
+        setCropLoadFarmId(farm.id)
+      })
+      .catch((loadError: unknown) => {
+        if (!active) return
+        setCropLoadError(farmErrorMessage(loadError))
+        setCropLoadFarmId(farm.id)
+      })
+    return () => {
+      active = false
+    }
+  }, [farm])
 
   async function handleStatusChange(status: 'active' | 'archived') {
     if (!farmId) return
@@ -135,9 +161,29 @@ export function FarmDetailsPage() {
           </div>
         </div>
         <div className="farm-module-grid">
-          <article className="farm-module-card">
-            <h3>Crops</h3>
-            <p>Crop association is pending integration with the approved crop catalog.</p>
+          <article className="farm-module-card farm-module-card--wide">
+            <h3>Crops grown on this farm</h3>
+            {!farm.cropIds?.length ? (
+              <p>No crops have been associated with this farm yet.</p>
+            ) : cropLoadFarmId !== farm.id ? (
+              <p role="status">Loading associated crops...</p>
+            ) : cropLoadError ? (
+              <p role="alert">{cropLoadError}</p>
+            ) : (
+              <ul className="farm-crop-list">
+                {farm.cropIds.map((cropId) => {
+                  const crop = availableCrops.find((item) => item.id === cropId)
+                  return (
+                    <li key={cropId}>
+                      {crop
+                        ? <Link to={`/crops/${crop.id}`}>{crop.name}</Link>
+                        : 'This crop is no longer available in the public catalog.'}
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+            <Link className="text-link" to="/crops">Browse crop catalog</Link>
           </article>
           <article className="farm-module-card">
             <h3>Soil records</h3>

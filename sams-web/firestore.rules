@@ -13,6 +13,14 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'active';
     }
 
+    function activeAdmin() {
+      return signedIn()
+        && request.auth.token.email_verified == true
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'active';
+    }
+
     function validDisplayName(value) {
       return value is string && value.size() > 0 && value.size() <= 120;
     }
@@ -57,6 +65,46 @@ service cloud.firestore {
         && data.status in ['active', 'inactive']
         && data.createdAt is timestamp
         && data.updatedAt == request.time;
+    }
+
+    function cropCategoryExists(categoryId) {
+      return exists(/databases/$(database)/documents/cropCategories/$(categoryId));
+    }
+
+    function validCrop(data) {
+      return data.keys().hasAll([
+          'name', 'categoryId', 'source', 'reviewStatus', 'isPublic', 'status',
+          'createdAt', 'updatedAt', 'updatedByUid'
+        ])
+        && data.keys().hasOnly([
+          'name', 'categoryId', 'description', 'soilGuidance', 'plantingSeason',
+          'waterGuidance', 'growthDuration', 'harvestPeriod', 'source', 'reviewStatus',
+          'isPublic', 'status', 'createdAt', 'updatedAt', 'updatedByUid'
+        ])
+        && validDisplayName(data.name)
+        && data.categoryId is string
+        && data.categoryId.size() > 0
+        && cropCategoryExists(data.categoryId)
+        && data.source is string
+        && data.source.size() > 0
+        && data.reviewStatus in ['pending', 'approved', 'rejected']
+        && data.isPublic is bool
+        && data.status in ['active', 'inactive']
+        && (!('description' in data) || data.description is string)
+        && (!('soilGuidance' in data) || data.soilGuidance is string)
+        && (!('plantingSeason' in data) || data.plantingSeason is string)
+        && (!('waterGuidance' in data) || data.waterGuidance is string)
+        && (!('growthDuration' in data) || data.growthDuration is string)
+        && (!('harvestPeriod' in data) || data.harvestPeriod is string)
+        && (!data.isPublic || (data.status == 'active' && data.reviewStatus == 'approved'));
+    }
+
+    function validCropCategory(data) {
+      return data.keys().hasAll(['name', 'description', 'status', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['name', 'description', 'status', 'createdAt', 'updatedAt'])
+        && validDisplayName(data.name)
+        && data.description is string
+        && data.status in ['active', 'inactive'];
     }
 
     match /users/{uid} {
@@ -118,7 +166,7 @@ service cloud.firestore {
           'ownerUid', 'name', 'location', 'size', 'sizeUnit', 'status', 'createdAt', 'updatedAt'
         ])
         && request.resource.data.keys().hasOnly([
-          'ownerUid', 'name', 'location', 'size', 'sizeUnit', 'status', 'createdAt', 'updatedAt'
+          'ownerUid', 'name', 'location', 'size', 'sizeUnit', 'cropIds', 'status', 'createdAt', 'updatedAt'
         ])
         && request.resource.data.ownerUid == request.auth.uid
         && validDisplayName(request.resource.data.name)
@@ -126,6 +174,7 @@ service cloud.firestore {
         && (request.resource.data.size is int || request.resource.data.size is float)
         && request.resource.data.size > 0
         && request.resource.data.sizeUnit in ['hectare', 'acre']
+        && (!('cropIds' in request.resource.data) || request.resource.data.cropIds is list)
         && request.resource.data.status == 'active'
         && request.resource.data.createdAt == request.time
         && request.resource.data.updatedAt == request.time;
@@ -145,7 +194,8 @@ service cloud.firestore {
             resource.data.status == 'active'
             && request.resource.data.status in ['active', 'archived']
             && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['name', 'location', 'size', 'sizeUnit', 'status', 'updatedAt'])
+              .hasOnly(['name', 'location', 'size', 'sizeUnit', 'cropIds', 'status', 'updatedAt'])
+            && (!('cropIds' in request.resource.data) || request.resource.data.cropIds is list)
           )
           || (
             resource.data.status == 'archived'
@@ -154,6 +204,54 @@ service cloud.firestore {
               .hasOnly(['status', 'updatedAt'])
           )
         );
+
+      allow delete: if false;
+    }
+
+    match /crops/{cropId} {
+      allow get, list: if activeAdmin()
+        || (
+          resource.data.isPublic == true
+          && resource.data.status == 'active'
+          && resource.data.reviewStatus == 'approved'
+        );
+
+      allow create: if activeAdmin()
+        && validCrop(request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.updatedByUid == request.auth.uid;
+
+      allow update: if activeAdmin()
+        && validCrop(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly([
+            'name', 'categoryId', 'description', 'soilGuidance', 'plantingSeason',
+            'waterGuidance', 'growthDuration', 'harvestPeriod', 'source', 'reviewStatus',
+            'isPublic', 'status', 'updatedAt', 'updatedByUid'
+          ])
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.updatedByUid == request.auth.uid;
+
+      allow delete: if false;
+    }
+
+    match /cropCategories/{categoryId} {
+      allow get, list: if activeAdmin() || resource.data.status == 'active';
+
+      allow create: if activeAdmin()
+        && validCropCategory(request.resource.data)
+        && request.resource.data.status == 'active'
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      allow update: if activeAdmin()
+        && validCropCategory(request.resource.data)
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['name', 'description', 'status', 'updatedAt'])
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time;
 
       allow delete: if false;
     }

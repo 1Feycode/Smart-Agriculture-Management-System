@@ -46,10 +46,66 @@ test('farmers self-register and only superadmins can manage user roles and statu
     email: 'unverified@example.test',
   }).firestore()
   const anonymousDb = testEnvironment.unauthenticatedContext().firestore()
+  const adminDb = testEnvironment.authenticatedContext('admin-1', {
+    email: 'admin@example.test',
+    email_verified: true,
+  }).firestore()
+  const dataManagerDb = testEnvironment.authenticatedContext('data-manager-1', {
+    email: 'manager@example.test',
+    email_verified: true,
+  }).firestore()
   const superadminDb = testEnvironment.authenticatedContext('superadmin-1', {
     email: 'superadmin@example.test',
   }).firestore()
   const profileRef = doc(farmerDb, 'users/farmer-1')
+
+  await testEnvironment.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore()
+    await setDoc(doc(db, 'users/admin-1'), {
+      uid: 'admin-1',
+      displayName: 'Catalog Administrator',
+      email: 'admin@example.test',
+      role: 'admin',
+      status: 'active',
+    })
+    await setDoc(doc(db, 'users/data-manager-1'), {
+      uid: 'data-manager-1',
+      displayName: 'Data Manager',
+      email: 'manager@example.test',
+      role: 'dataManager',
+      status: 'active',
+    })
+    await setDoc(doc(db, 'cropCategories/grains'), {
+      name: 'Grains',
+      description: 'Grain crops',
+      status: 'active',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    })
+    await setDoc(doc(db, 'crops/maize'), {
+      name: 'Maize',
+      categoryId: 'grains',
+      description: 'Approved crop catalog test record',
+      source: 'Test source',
+      reviewStatus: 'approved',
+      isPublic: true,
+      status: 'active',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      updatedByUid: 'admin-1',
+    })
+    await setDoc(doc(db, 'crops/draft'), {
+      name: 'Draft crop',
+      categoryId: 'grains',
+      source: 'Test source',
+      reviewStatus: 'pending',
+      isPublic: false,
+      status: 'active',
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+      updatedByUid: 'admin-1',
+    })
+  })
 
   await assertSucceeds(runTransaction(farmerDb, async (transaction) => {
     const snapshot = await transaction.get(profileRef)
@@ -145,6 +201,14 @@ test('farmers self-register and only superadmins can manage user roles and statu
     updatedAt: serverTimestamp(),
   }))
   await assertSucceeds(getDoc(farmRef))
+  await assertSucceeds(updateDoc(farmRef, {
+    cropIds: ['maize'],
+    updatedAt: serverTimestamp(),
+  }))
+  await assertFails(updateDoc(farmRef, {
+    cropIds: 'maize',
+    updatedAt: serverTimestamp(),
+  }))
   await testEnvironment.withSecurityRulesDisabled(async (context) => {
     await setDoc(doc(context.firestore(), 'farms/farm-other'), {
       ownerUid: 'farmer-2',
@@ -300,6 +364,75 @@ test('farmers self-register and only superadmins can manage user roles and statu
   })
 
   await assertSucceeds(getDocs(collection(superadminDb, 'users')))
+  await assertSucceeds(getDoc(doc(anonymousDb, 'crops/maize')))
+  await assertFails(getDoc(doc(anonymousDb, 'crops/draft')))
+  await assertSucceeds(getDoc(doc(adminDb, 'crops/draft')))
+  await assertSucceeds(getDocs(query(
+    collection(anonymousDb, 'crops'),
+    where('isPublic', '==', true),
+    where('status', '==', 'active'),
+    where('reviewStatus', '==', 'approved'),
+    orderBy('name'),
+  )))
+  await assertFails(getDocs(collection(anonymousDb, 'crops')))
+  await assertSucceeds(getDocs(query(
+    collection(anonymousDb, 'cropCategories'),
+    where('status', '==', 'active'),
+  )))
+  await assertFails(setDoc(doc(farmerDb, 'crops/farmer-created'), {
+    name: 'Farmer crop',
+    categoryId: 'grains',
+    source: 'Untrusted source',
+    reviewStatus: 'approved',
+    isPublic: true,
+    status: 'active',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    updatedByUid: 'farmer-1',
+  }))
+  await assertFails(setDoc(doc(dataManagerDb, 'crops/manager-created'), {
+    name: 'Manager crop',
+    categoryId: 'grains',
+    source: 'Untrusted source',
+    reviewStatus: 'pending',
+    isPublic: false,
+    status: 'active',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    updatedByUid: 'data-manager-1',
+  }))
+  const cropRef = doc(adminDb, 'crops/admin-created')
+  await assertSucceeds(setDoc(cropRef, {
+    name: 'Sorghum',
+    categoryId: 'grains',
+    source: 'Approved source',
+    reviewStatus: 'pending',
+    isPublic: false,
+    status: 'active',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    updatedByUid: 'admin-1',
+  }))
+  await assertSucceeds(updateDoc(cropRef, {
+    reviewStatus: 'approved',
+    isPublic: true,
+    updatedAt: serverTimestamp(),
+    updatedByUid: 'admin-1',
+  }))
+  await assertFails(updateDoc(cropRef, {
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+    updatedByUid: 'admin-1',
+  }))
+  await assertFails(deleteDoc(cropRef))
+  await assertSucceeds(setDoc(doc(adminDb, 'cropCategories/legumes'), {
+    name: 'Legumes',
+    description: 'Legume crops',
+    status: 'active',
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  }))
+  await assertFails(deleteDoc(doc(adminDb, 'cropCategories/legumes')))
   await assertFails(getDoc(doc(superadminDb, 'farms/farm-1')))
   await assertFails(updateDoc(doc(superadminDb, 'farms/farm-1'), {
     status: 'archived',

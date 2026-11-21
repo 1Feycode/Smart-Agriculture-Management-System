@@ -39,7 +39,7 @@ Types use Firestore names: `string`, `number`, `boolean`, `timestamp`, `map`, `a
 | location | map | Yes | Farm administrative location | `region`, `district`, `community`; each non-empty, <=100 chars; no coordinates | `{region:"Ashanti", district:"Kumasi", community:"Bantama"}` | FR-015 |
 | size | number | Yes | Farm area | Positive finite value | `2.5` | FR-017 |
 | sizeUnit | string | Yes | Area unit | `hectare` or `acre` | `hectare` | FR-017 |
-| cropIds | array<string> | No | Current crop refs | Not collected in Phase 3; add with the crop-management workflow | `["crop-001"]` | FR-022 |
+| cropIds | array<string> | No | Current crop refs | Selected from published catalog by farm owner; do not duplicate crop documents | `["crop-001"]` | FR-022 |
 | activitySummary | string | No | Farmer activity description | Not collected in Phase 3; add after activity fields are confirmed | `Seasonal grain production` | FR-019 |
 | status | string | Yes | Active/archive state | `active` or `archived`; archived records may be reactivated | `active` | FR-020, FR-023 |
 | createdAt / updatedAt | timestamp | Yes | Audit times | Server time | timestamp | FR-023 |
@@ -194,6 +194,8 @@ Composite indexes must be validated against exact SDK queries and Rules; this is
 | notifications | recipientUid + readAt + createdAt desc | recipientUid, readAt, createdAt desc |
 | activityLogs | occurredAt desc + action/entity filters | occurredAt desc, action; confirm composite report filters |
 | crops | isPublic + status + name/category | Keep catalog bounded; Firestore does not provide general substring search |
+| crops | `isPublic == true`, `status == active`, `reviewStatus == approved`, `name asc` | isPublic, status, reviewStatus, name asc |
+| cropCategories | `status == active`, `name asc` | status, name asc |
 
 Use `limit()` (initially 20–50, confirm UX), `startAfter(lastSnapshot)` cursors, and stable ordering. Large date exports must be paged and capped; do not use unbounded reads or client-side aggregation of a partial result as a complete report. Consider Firestore count/aggregation queries only when supported and budgeted.
 

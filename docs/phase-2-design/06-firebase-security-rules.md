@@ -15,7 +15,7 @@ The rules below are a restrictive **design baseline**, not a production certific
 
 ### Current application rules scope
 
-The executable rules file at `sams-web/firestore.rules` implements farmer profile/location updates, superadmin-only user listing and role/status management, and verified, active owner-farmer farm create/read/update/archive/reactivate operations. Staff farm inspection/archive access is not enabled. Profile and farm deletion remain denied; all other business collections remain denied. The larger rule set below remains a future design proposal and must not be copied into production without schema review, emulator coverage, and security approval.
+The executable rules file at `sams-web/firestore.rules` implements farmer profile/location updates, superadmin-only user listing and role/status management, verified, active owner-farmer farm create/read/update/archive/reactivate operations, and admin-only crop/crop-category management. Public crop reads are limited to active, approved, published records; active categories are public. Staff farm inspection/archive access is not enabled. Profile, farm, crop, and category deletion remain denied; all other business collections remain denied. The larger rule set below remains a future design proposal and must not be copied into production without schema review, emulator coverage, and security approval.
 
 ## Firestore Security Rules
 

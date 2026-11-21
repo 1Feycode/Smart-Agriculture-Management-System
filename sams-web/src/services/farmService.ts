@@ -114,7 +114,7 @@ export async function setFarmStatus(farmId: string, status: FarmStatus): Promise
 function parseFarm(value: unknown, id: string): Farm {
   if (!isRecord(value)) throw new Error('This farm record has an invalid format.')
 
-  const { ownerUid, name, location, size, sizeUnit, status, createdAt, updatedAt } = value
+  const { ownerUid, name, location, size, sizeUnit, cropIds, status, createdAt, updatedAt } = value
   if (
     typeof ownerUid !== 'string'
     || typeof name !== 'string'
@@ -123,6 +123,8 @@ function parseFarm(value: unknown, id: string): Farm {
     || !Number.isFinite(size)
     || size <= 0
     || !isFarmSizeUnit(sizeUnit)
+    || (cropIds !== undefined
+      && (!Array.isArray(cropIds) || !cropIds.every((cropId) => typeof cropId === 'string')))
     || (status !== 'active' && status !== 'archived')
     || !isTimestamp(createdAt)
     || !isTimestamp(updatedAt)
@@ -130,7 +132,18 @@ function parseFarm(value: unknown, id: string): Farm {
     throw new Error('This farm record is incomplete or invalid.')
   }
 
-  return { id, ownerUid, name, location, size, sizeUnit, status, createdAt, updatedAt }
+  return {
+    id,
+    ownerUid,
+    name,
+    location,
+    size,
+    sizeUnit,
+    ...(Array.isArray(cropIds) ? { cropIds } : {}),
+    status,
+    createdAt,
+    updatedAt,
+  }
 }
 
 function isAdministrativeLocation(value: unknown): value is AdministrativeLocation {

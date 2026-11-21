@@ -2,8 +2,11 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { FormField } from '../forms/FormField'
 import { useAuth } from '../hooks/useAuth'
+import { firebaseAuthErrorMessage } from '../services/authService'
 import { createFarm, farmErrorMessage, getFarm, updateFarm } from '../services/farmService'
+import { listPublicCrops } from '../services/cropService'
 import { FARM_SIZE_UNITS, isFarmSizeUnit, type FarmInput, type FarmSizeUnit } from '../types/farm'
+import type { Crop } from '../types/crop'
 import { ErrorState } from '../components/common/ErrorState'
 import { LoadingState } from '../components/common/LoadingState'
 
@@ -18,10 +21,31 @@ export function FarmFormPage() {
   const [community, setCommunity] = useState(profile?.location?.community ?? '')
   const [size, setSize] = useState('')
   const [sizeUnit, setSizeUnit] = useState<FarmSizeUnit>('hectare')
+  const [crops, setCrops] = useState<Crop[]>([])
+  const [selectedCropIds, setSelectedCropIds] = useState<string[]>([])
+  const [cropLoadError, setCropLoadError] = useState<string | null>(null)
+  const [cropsLoading, setCropsLoading] = useState(true)
   const [loadedFarmId, setLoadedFarmId] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+    void listPublicCrops()
+      .then((records) => {
+        if (active) setCrops(records)
+      })
+      .catch((loadError: unknown) => {
+        if (active) setCropLoadError(firebaseAuthErrorMessage(loadError))
+      })
+      .finally(() => {
+        if (active) setCropsLoading(false)
+      })
+    return () => {
+      active = false
+    }
+  }, [])
 
   useEffect(() => {
     if (!farmId) return
@@ -48,6 +72,7 @@ export function FarmFormPage() {
         setCommunity(farm.location.community)
         setSize(String(farm.size))
         setSizeUnit(farm.sizeUnit)
+        setSelectedCropIds(farm.cropIds ?? [])
         setLoadedFarmId(farmId)
       })
       .catch((loadError: unknown) => {
@@ -91,6 +116,7 @@ export function FarmFormPage() {
       location,
       size: numericSize,
       sizeUnit,
+      cropIds: [...new Set(selectedCropIds)],
     }
 
     if (!user) return
@@ -202,6 +228,55 @@ export function FarmFormPage() {
             </select>
           </div>
         </div>
+        <fieldset className="farm-crop-picker">
+          <legend>Crops grown on this farm</legend>
+          <p>Select from published crop records. Crop selection does not add soil or recommendation records.</p>
+          {cropLoadError && (
+            <div className="account-feedback account-feedback--error" role="alert">
+              {cropLoadError} Existing crop associations will be preserved unless you remove them below.
+            </div>
+          )}
+          {cropsLoading ? (
+            <p role="status">Loading published crops...</p>
+          ) : !cropLoadError && crops.length === 0 ? (
+            <p>No published crops are available yet.</p>
+          ) : (
+            <div className="farm-crop-picker__options">
+              {crops.map((crop) => (
+                <label key={crop.id}>
+                  <input
+                    type="checkbox"
+                    checked={selectedCropIds.includes(crop.id)}
+                    onChange={(event) => {
+                      setSelectedCropIds((current) => event.target.checked
+                        ? [...new Set([...current, crop.id])]
+                        : current.filter((id) => id !== crop.id))
+                    }}
+                  />
+                  <span>{crop.name}</span>
+                </label>
+              ))}
+            </div>
+          )}
+          {selectedCropIds.some((id) => !crops.some((crop) => crop.id === id)) && (
+            <div className="farm-crop-picker__unavailable">
+              {selectedCropIds
+                .filter((id) => !crops.some((crop) => crop.id === id))
+                .map((id) => (
+                  <div key={id}>
+                    <span>Unavailable crop record ({id})</span>
+                    <button
+                      className="text-link"
+                      type="button"
+                      onClick={() => setSelectedCropIds((current) => current.filter((cropId) => cropId !== id))}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                ))}
+            </div>
+          )}
+        </fieldset>
         <div className="profile-form__actions">
           <button className="button button--primary" type="submit" disabled={submitting}>
             {submitting ? 'Saving...' : editing ? 'Save changes' : 'Add farm'}

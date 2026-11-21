@@ -12,6 +12,7 @@ export interface FarmInput {
   location: AdministrativeLocation
   size: number
   sizeUnit: FarmSizeUnit
+  cropIds?: string[]
 }
 
 export interface Farm extends FarmInput {

@@ -4,7 +4,10 @@ import { PublicLayout } from '../layouts/PublicLayout'
 import { AboutPage } from '../pages/AboutPage'
 import { AccountEntryPage } from '../pages/AccountEntryPage'
 import { AccessDeniedPage } from '../pages/AccessDeniedPage'
-import { CropInformationPage } from '../pages/CropInformationPage'
+import { CropCatalogPage } from '../pages/CropCatalogPage'
+import { CropDetailsPage } from '../pages/CropDetailsPage'
+import { CropFormPage } from '../pages/CropFormPage'
+import { CropManagementPage } from '../pages/CropManagementPage'
 import { DashboardPlaceholderPage } from '../pages/DashboardPlaceholderPage'
 import { FarmDetailsPage } from '../pages/FarmDetailsPage'
 import { FarmFormPage } from '../pages/FarmFormPage'
@@ -26,7 +29,8 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <HomePage /> },
       { path: 'about', element: <AboutPage /> },
-      { path: 'crops', element: <CropInformationPage /> },
+      { path: 'crops', element: <CropCatalogPage /> },
+      { path: 'crops/:cropId', element: <CropDetailsPage /> },
       { path: 'login', element: <AccountEntryPage mode="login" /> },
       { path: 'register', element: <AccountEntryPage mode="register" /> },
       { path: 'forgot-password', element: <AccountEntryPage mode="forgot-password" /> },
@@ -77,6 +81,7 @@ export const router = createBrowserRouter([
       { path: 'farms/new', element: <FarmFormPage /> },
       { path: 'farms/:farmId/edit', element: <FarmFormPage /> },
       { path: 'farms/:farmId', element: <FarmDetailsPage /> },
+      { path: 'crops', element: <CropCatalogPage embedded /> },
       { path: '*', element: <DashboardPlaceholderPage role="farmer" /> },
     ],
   },
@@ -119,6 +124,9 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: 'dashboard', element: <DashboardPlaceholderPage role="admin" /> },
+      { path: 'crops', element: <CropManagementPage /> },
+      { path: 'crops/new', element: <CropFormPage /> },
+      { path: 'crops/:cropId/edit', element: <CropFormPage /> },
       { path: '*', element: <DashboardPlaceholderPage role="admin" /> },
     ],
   },
