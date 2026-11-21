@@ -40,6 +40,7 @@ Types use Firestore names: `string`, `number`, `boolean`, `timestamp`, `map`, `a
 | size | number | Yes | Farm area | Positive finite value | `2.5` | FR-017 |
 | sizeUnit | string | Yes | Area unit | `hectare` or `acre` | `hectare` | FR-017 |
 | cropIds | array<string> | No | Current crop refs | Selected from published catalog by farm owner; do not duplicate crop documents | `["crop-001"]` | FR-022 |
+| soilType, soilTexture | string | No | Farmer-reported general soil profile, distinct from dated tests | Optional free text, <=120 characters; no controlled categories | `Sandy loam (reported)` | FR-037, FR-041 |
 | activitySummary | string | No | Farmer activity description | Not collected in Phase 3; add after activity fields are confirmed | `Seasonal grain production` | FR-019 |
 | status | string | Yes | Active/archive state | `active` or `archived`; archived records may be reactivated | `active` | FR-020, FR-023 |
 | createdAt / updatedAt | timestamp | Yes | Audit times | Server time | timestamp | FR-023 |
@@ -59,15 +60,15 @@ Types use Firestore names: `string`, `number`, `boolean`, `timestamp`, `map`, `a
 | Field | Type | Required | Description | Validation | Example | Related FR IDs |
 |---|---|---:|---|---|---|---|
 | ownerUid, farmId | string | Yes | Owner and farm relation | Farm must belong to owner | `uid-farmer-001`, `farm-001` | FR-037–038, FR-042 |
-| testDate | timestamp | Yes | Date soil was sampled/tested | Not future unless policy allows | timestamp | FR-043 |
-| sourceType | string | Yes | Farmer estimate/lab/other source | Approved enum TBD | `laboratory` | FR-043, FR-045 |
-| sourceName | string | Yes | Lab/provider or farmer-reported source | Non-empty and bounded | `Example lab` | FR-043 |
-| ph | number | No | Soil pH if measured | Numeric range must be agronomist-approved; absent stays absent | `6.2` | FR-039 |
-| nutrients | map | No | Named nutrient values and units | Explicit value/unit/method; missing is not zero | `{nitrogen:{value:12,unit:"TBD"}}` | FR-040 |
-| texture / soilType | string | No | Reported soil texture/type | Controlled values TBD or source text | `loam` | FR-041 |
-| verificationStatus | string | Yes | Verified/unverified/review-needed | Enum | `unverified` | FR-044–045 |
-| reviewNotes | string | No | Expert review note | Authorized reviewer only | `Source reviewed` | FR-044 |
-| assignedExpertUid | string | No | Reviewer allowed to inspect this test | Admin/trusted assignment only; never farmer-controlled | `uid-expert-001` | FR-044 |
+| testDate | timestamp | Yes | Date soil was sampled/tested | Must not be in the future | timestamp | FR-043 |
+| sourceType | string | Yes | Farmer estimate/laboratory/other source | Phase 5 values: `farmer-estimate`, `laboratory`, `other`; retain entered source name | `laboratory` | FR-043, FR-045 |
+| sourceName | string | Yes | Lab/provider or farmer-reported source | Non-empty, <=120 characters | `Example lab` | FR-043 |
+| ph | number | No | Soil pH if measured | No pH range until approved; absent stays absent | `6.2` | FR-039 |
+| nutrients | map | No | Named nutrient values and units | Each entry has a measured number and explicit source-provided unit; method is optional; missing is not zero | `{nitrogen:{value:12,unit:"as reported"}}` | FR-040 |
+| texture / soilType | string | No | Reported soil texture/type | Optional free text, <=120 characters; no controlled categories | `loam` | FR-041 |
+| verificationStatus | string | Yes | Expert review state | `unverified`, `verified`, or `review-needed`; new farmer records are always `unverified` | `unverified` | FR-044–045 |
+| reviewNotes | string | No | Expert review note | Assigned active expert only | `Source reviewed` | FR-044 |
+| assignedExpertUid | string | No | Reviewer allowed to inspect this test | Active admin assigns an active expert; never farmer-controlled | `uid-expert-001` | FR-044 |
 | createdAt / updatedAt | timestamp | Yes | Audit times | Server time | timestamp | FR-038 |
 
 ### `fertilizers/{fertilizerId}` and `fertilizerRules/{ruleId}`
@@ -185,6 +186,7 @@ Composite indexes must be validated against exact SDK queries and Rules; this is
 | farms | `ownerUid == uid`, `status == active`, `updatedAt desc` | ownerUid, status, updatedAt desc |
 | farms | `ownerUid == uid`, `status == active`, `name asc` (including name-prefix search) | ownerUid, status, name asc |
 | soilTests | ownerUid + farmId; `testDate desc` | ownerUid, farmId, testDate desc |
+| soilTests | assignedExpertUid; `testDate desc` | assignedExpertUid, testDate desc |
 | recommendations | ownerUid + status + `createdAt desc` | ownerUid, status, createdAt desc |
 | recommendations | assignedExpertUid + status + `createdAt asc` | assignedExpertUid, status, createdAt asc |
 | questions | ownerUid + `createdAt desc`; expert status/assignment + createdAt | ownerUid, createdAt desc; status, assignedExpertUid, createdAt asc |

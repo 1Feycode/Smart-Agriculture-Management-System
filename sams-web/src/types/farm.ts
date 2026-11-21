@@ -13,6 +13,8 @@ export interface FarmInput {
   size: number
   sizeUnit: FarmSizeUnit
   cropIds?: string[]
+  soilType?: string
+  soilTexture?: string
 }
 
 export interface Farm extends FarmInput {

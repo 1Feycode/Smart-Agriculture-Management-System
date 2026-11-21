@@ -123,33 +123,9 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Farmers own soil records; assigned experts review; admins assign reviewers.
-    // Original farmer ownership and farm linkage are immutable; no hard delete.
-    match /soilTests/{soilTestId} {
-      allow get, list: if signedIn() && (admin() || resource.data.ownerUid == request.auth.uid
-        || (expert() && resource.data.assignedExpertUid == request.auth.uid));
-      allow create: if farmer() && request.resource.data.ownerUid == request.auth.uid
-        && ownedFarm(request.resource.data.farmId, request.auth.uid)
-        && onlyFields(['ownerUid', 'farmId', 'testDate', 'sourceType', 'sourceName', 'ph', 'nutrients', 'texture', 'soilType', 'verificationStatus', 'createdAt', 'updatedAt'])
-        && request.resource.data.verificationStatus == 'unverified' && serverCreated();
-      allow update: if farmer() && resource.data.ownerUid == request.auth.uid
-        && request.resource.data.ownerUid == resource.data.ownerUid
-        && request.resource.data.farmId == resource.data.farmId
-        && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['testDate', 'sourceType', 'sourceName', 'ph', 'nutrients', 'texture', 'soilType', 'updatedAt'])
-        && request.resource.data.updatedAt == request.time;
-      allow update: if expert() && resource.data.assignedExpertUid == request.auth.uid
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['verificationStatus', 'reviewNotes', 'updatedAt'])
-        && request.resource.data.ownerUid == resource.data.ownerUid
-        && request.resource.data.farmId == resource.data.farmId
-        && request.resource.data.updatedAt == request.time;
-      allow update: if admin() && request.resource.data.ownerUid == resource.data.ownerUid
-        && request.resource.data.farmId == resource.data.farmId
-        && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['assignedExpertUid', 'verificationStatus', 'reviewNotes', 'updatedAt'])
-        && request.resource.data.updatedAt == request.time;
-      allow delete: if false;
-    }
+    // Soil-test rules are intentionally omitted from this future-design baseline.
+    // Use sams-web/firestore.rules for the implemented Phase 5 ownership,
+    // admin-assignment, and assigned-expert review policy.
 
     // Public readers see approved active fertilizer content; only admins curate it.
     match /fertilizers/{fertilizerId} {

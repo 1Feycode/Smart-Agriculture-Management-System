@@ -35,6 +35,23 @@
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "name", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "soilTests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerUid", "order": "ASCENDING" },
+        { "fieldPath": "farmId", "order": "ASCENDING" },
+        { "fieldPath": "testDate", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "soilTests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "assignedExpertUid", "order": "ASCENDING" },
+        { "fieldPath": "testDate", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []

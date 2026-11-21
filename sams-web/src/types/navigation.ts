@@ -80,6 +80,7 @@ export const dashboardNavigation: Record<DashboardRole, DashboardNavigation> = {
       { label: 'Overview', href: '/admin/dashboard', icon: LayoutDashboard },
       { label: 'Users', href: '/admin/users', icon: Users },
       { label: 'Crop information', href: '/admin/crops', icon: Leaf },
+      { label: 'Soil tests', href: '/admin/soil-tests', icon: FlaskConical },
       { label: 'Fertilizers', href: '/admin/fertilizers', icon: Sprout },
       { label: 'Public content', href: '/admin/content', icon: BookOpen },
       { label: 'Activity log', href: '/admin/activity', icon: Activity },

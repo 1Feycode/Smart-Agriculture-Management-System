@@ -29,6 +29,10 @@ export function DashboardLayout({ role }: DashboardLayoutProps) {
     : currentItem?.label ?? formatLabel(location.pathname.slice(navigation.basePath.length))
   const pageDescription = role === 'farmer'
     ? getFarmerPageDescription(location.pathname)
+    : role === 'expert' && location.pathname.startsWith('/expert/soil-tests')
+      ? 'Review only soil-test records assigned to your active expert account.'
+      : role === 'admin' && location.pathname.startsWith('/admin/soil-tests')
+        ? 'Assign farmer-submitted soil-test records to active agricultural experts.'
     : 'A foundation shell for future SAMS workflows.'
   const breadcrumbs: BreadcrumbItem[] = [
     { label: navigation.label, href: navigation.basePath },
@@ -83,6 +87,9 @@ function getFarmerPageTitle(pathname: string): string {
   if (pathname === '/farmer/profile') return 'My Profile'
   if (pathname === '/farmer/farms') return 'My Farms'
   if (pathname === '/farmer/farms/new') return 'Add a Farm'
+  if (pathname === '/farmer/soil-tests') return 'Soil Tests'
+  if (pathname === '/farmer/soil-tests/new') return 'Add Soil Test'
+  if (pathname.startsWith('/farmer/soil-tests/')) return 'Soil Test Details'
   if (pathname.endsWith('/edit')) return 'Edit Farm'
   if (pathname.startsWith('/farmer/farms/')) return 'Farm Details'
   return 'Farmer Workspace'
@@ -93,6 +100,9 @@ function getFarmerPageDescription(pathname: string): string {
   if (pathname === '/farmer/profile') return 'Review and update your personal details and administrative location.'
   if (pathname === '/farmer/farms') return 'Search, review, and manage the farms you own.'
   if (pathname === '/farmer/farms/new') return 'Register a farm with its location and measured area.'
+  if (pathname === '/farmer/soil-tests') return 'Review soil information and dated soil-test records for your farms.'
+  if (pathname === '/farmer/soil-tests/new') return 'Record dated measurements with their source; unknown values remain blank.'
+  if (pathname.startsWith('/farmer/soil-tests/')) return 'Review the source, measurements, and verification state for this soil record.'
   if (pathname.endsWith('/edit')) return 'Update the approved details for your farm.'
   if (pathname.startsWith('/farmer/farms/')) return 'Review the saved information and status for this farm.'
   return 'Manage your SAMS farmer account.'

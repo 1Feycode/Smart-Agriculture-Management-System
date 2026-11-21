@@ -1162,6 +1162,18 @@
   background: #fff;
 }
 
+.soil-page select,
+.soil-test-form select,
+.soil-review-form select {
+  width: 100%;
+  min-height: 44px;
+  padding: 9px 12px;
+  border: 1px solid #d6e0d8;
+  border-radius: 9px;
+  color: var(--color-ink);
+  background: #fff;
+}
+
 .farm-details__card {
   max-width: 760px;
 }
@@ -2204,6 +2216,228 @@
   clip-path: inset(50%);
 }
 
+.farm-form__soil,
+.farm-details__soil-profile,
+.soil-page,
+.soil-form-page,
+.soil-details-page {
+  display: grid;
+  gap: 16px;
+}
+
+.farm-form__soil,
+.farm-details__soil-profile {
+  padding: 18px;
+  border: 1px solid var(--color-line);
+  border-radius: 13px;
+  background: #f9fbf9;
+}
+
+.farm-form__soil h2,
+.farm-details__soil-profile h2,
+.soil-form-section h2,
+.soil-details-card h3,
+.soil-review-form h2,
+.soil-assignment-form h2 {
+  margin: 0;
+  color: var(--color-forest);
+  font-size: 1rem;
+}
+
+.farm-form__soil p,
+.farm-details__soil-profile p,
+.soil-form-section p,
+.soil-nutrient-editor > p,
+.soil-review-form > p,
+.soil-assignment-form > p {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.farm-details__soil-profile .profile-details {
+  margin-top: 0;
+}
+
+.soil-page__heading,
+.soil-details-card__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.soil-page__heading h2,
+.soil-farm-picker h2,
+.soil-details-card__heading h2 {
+  margin: 5px 0 0;
+  color: var(--color-forest);
+  font-size: clamp(1.3rem, 3vw, 1.8rem);
+}
+
+.soil-page__heading p,
+.soil-details-card__heading p {
+  margin: 8px 0 0;
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  line-height: 1.55;
+}
+
+.soil-farm-picker {
+  display: grid;
+  gap: 18px;
+  padding: 22px;
+  border: 1px solid var(--color-line);
+  border-radius: 15px;
+  background: #fff;
+}
+
+.soil-farm-picker__cards,
+.soil-nutrient-results__list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 13px;
+}
+
+.soil-record-list {
+  display: grid;
+  gap: 12px;
+}
+
+.soil-record-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px 20px;
+  padding: 18px;
+  border: 1px solid var(--color-line);
+  border-radius: 13px;
+  background: #fff;
+}
+
+.soil-record-card h2,
+.soil-record-card h3 {
+  margin: 0;
+  color: var(--color-forest);
+  font-size: 1rem;
+}
+
+.soil-record-card h2 a,
+.soil-record-card h3 a {
+  color: inherit;
+}
+
+.soil-record-card p {
+  margin: 7px 0 0;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+
+.soil-record-card dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px 24px;
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.soil-record-card dl > div {
+  display: flex;
+  gap: 6px;
+  font-size: 0.78rem;
+}
+
+.soil-record-card dt {
+  color: var(--color-muted);
+}
+
+.soil-record-card dd {
+  margin: 0;
+  font-weight: 650;
+}
+
+.soil-test-form,
+.soil-review-form,
+.soil-assignment-form {
+  padding: 20px;
+  border: 1px solid var(--color-line);
+  border-radius: 15px;
+  background: #fff;
+}
+
+.soil-form-section,
+.soil-nutrient-editor,
+.soil-nutrient-results,
+.soil-review-notes {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--color-line);
+  border-radius: 12px;
+  background: #f9fbf9;
+}
+
+.soil-nutrient-editor {
+  min-width: 0;
+}
+
+.soil-nutrient-editor__row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: end;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.soil-test-form__status-note,
+.soil-details-card__source-note,
+.soil-details-card__audit {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.soil-details-card {
+  display: grid;
+  gap: 18px;
+}
+
+.soil-nutrient-results__list {
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.soil-nutrient-results__list article {
+  padding: 13px;
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.soil-nutrient-results__list h4,
+.soil-nutrient-results__list p,
+.soil-review-notes p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.soil-nutrient-results__list p,
+.soil-review-notes p {
+  margin-top: 6px;
+  color: var(--color-muted);
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+
+.soil-details-card__audit {
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 1050px) {
   .hero-section__inner {
     grid-template-columns: minmax(0, 0.9fr) minmax(380px, 1.1fr);
@@ -2587,6 +2821,33 @@
 
   .farm-form__size {
     grid-template-columns: 1fr;
+  }
+
+  .soil-page__heading,
+  .soil-details-card__heading {
+    flex-direction: column;
+  }
+
+  .soil-page__heading .farm-card__actions {
+    width: 100%;
+  }
+
+  .soil-page__heading .button {
+    flex: 1;
+  }
+
+  .soil-farm-picker__cards,
+  .soil-nutrient-editor__row {
+    grid-template-columns: 1fr;
+  }
+
+  .soil-record-card {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+  }
+
+  .soil-record-card dl {
+    grid-column: auto;
   }
 
   .crop-catalog,

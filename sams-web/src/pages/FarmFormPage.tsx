@@ -19,6 +19,8 @@ export function FarmFormPage() {
   const [region, setRegion] = useState(profile?.location?.region ?? '')
   const [district, setDistrict] = useState(profile?.location?.district ?? '')
   const [community, setCommunity] = useState(profile?.location?.community ?? '')
+  const [soilType, setSoilType] = useState('')
+  const [soilTexture, setSoilTexture] = useState('')
   const [size, setSize] = useState('')
   const [sizeUnit, setSizeUnit] = useState<FarmSizeUnit>('hectare')
   const [crops, setCrops] = useState<Crop[]>([])
@@ -70,6 +72,8 @@ export function FarmFormPage() {
         setRegion(farm.location.region)
         setDistrict(farm.location.district)
         setCommunity(farm.location.community)
+        setSoilType(farm.soilType ?? '')
+        setSoilTexture(farm.soilTexture ?? '')
         setSize(String(farm.size))
         setSizeUnit(farm.sizeUnit)
         setSelectedCropIds(farm.cropIds ?? [])
@@ -106,6 +110,10 @@ export function FarmFormPage() {
       setError('Enter a region, district, and community or town, each no longer than 100 characters.')
       return
     }
+    if (soilType.trim().length > 120 || soilTexture.trim().length > 120) {
+      setError('Soil type and texture must each be no longer than 120 characters.')
+      return
+    }
     if (!Number.isFinite(numericSize) || numericSize <= 0) {
       setError('Farm size must be a number greater than zero.')
       return
@@ -117,6 +125,8 @@ export function FarmFormPage() {
       size: numericSize,
       sizeUnit,
       cropIds: [...new Set(selectedCropIds)],
+      ...(soilType.trim() ? { soilType: soilType.trim() } : {}),
+      ...(soilTexture.trim() ? { soilTexture: soilTexture.trim() } : {}),
     }
 
     if (!user) return
@@ -228,6 +238,26 @@ export function FarmFormPage() {
             </select>
           </div>
         </div>
+        <section className="farm-form__soil" aria-labelledby="farm-soil-profile-title">
+          <h2 id="farm-soil-profile-title">General soil information</h2>
+          <p>These are your general observations for this farm, not laboratory soil-test results.</p>
+          <FormField
+            id="farm-soil-type"
+            name="soilType"
+            label="Soil type (optional)"
+            maxLength={120}
+            value={soilType}
+            onChange={(event) => setSoilType(event.target.value)}
+          />
+          <FormField
+            id="farm-soil-texture"
+            name="soilTexture"
+            label="Soil texture (optional)"
+            maxLength={120}
+            value={soilTexture}
+            onChange={(event) => setSoilTexture(event.target.value)}
+          />
+        </section>
         <fieldset className="farm-crop-picker">
           <legend>Crops grown on this farm</legend>
           <p>Select from published crop records. Crop selection does not add soil or recommendation records.</p>

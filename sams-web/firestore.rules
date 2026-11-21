@@ -21,6 +21,22 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'active';
     }
 
+    function activeExpert() {
+      return signedIn()
+        && request.auth.token.email_verified == true
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'expert'
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'active';
+    }
+
+    function activeExpertUid(uid) {
+      let expertPath = /databases/$(database)/documents/users/$(uid);
+      return uid is string
+        && exists(expertPath)
+        && get(expertPath).data.role == 'expert'
+        && get(expertPath).data.status == 'active';
+    }
+
     function validDisplayName(value) {
       return value is string && value.size() > 0 && value.size() <= 120;
     }
@@ -36,6 +52,49 @@ service cloud.firestore {
         && validLocationText(value.region)
         && validLocationText(value.district)
         && validLocationText(value.community);
+    }
+
+    function validOptionalSoilText(data, field) {
+      return !(field in data)
+        || (data[field] is string && data[field].size() <= 120);
+    }
+
+    function activeOwnedFarm(farmId) {
+      let farmPath = /databases/$(database)/documents/farms/$(farmId);
+      return farmId is string
+        && exists(farmPath)
+        && get(farmPath).data.ownerUid == request.auth.uid
+        && get(farmPath).data.status == 'active';
+    }
+
+    function validSoilTest(data) {
+      return data.keys().hasAll([
+          'ownerUid', 'farmId', 'testDate', 'sourceType', 'sourceName',
+          'verificationStatus', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerUid', 'farmId', 'testDate', 'sourceType', 'sourceName', 'ph',
+          'nutrients', 'soilType', 'texture', 'verificationStatus', 'reviewNotes',
+          'assignedExpertUid', 'createdAt', 'updatedAt'
+        ])
+        && data.ownerUid is string
+        && data.farmId is string
+        && data.testDate is timestamp
+        && data.sourceType in ['farmer-estimate', 'laboratory', 'other']
+        && data.sourceName is string
+        && data.sourceName.size() > 0
+        && data.sourceName.size() <= 120
+        && (!('ph' in data) || data.ph == null || data.ph is number)
+        && (!('nutrients' in data) || data.nutrients is map)
+        && validOptionalSoilText(data, 'soilType')
+        && validOptionalSoilText(data, 'texture')
+        && data.verificationStatus in ['unverified', 'verified', 'review-needed']
+        && (!('reviewNotes' in data) || data.reviewNotes is string)
+        && (!('assignedExpertUid' in data)
+          || data.assignedExpertUid == null
+          || (data.assignedExpertUid is string && data.assignedExpertUid.size() > 0))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
     }
 
     function activeFarmer() {
@@ -166,7 +225,8 @@ service cloud.firestore {
           'ownerUid', 'name', 'location', 'size', 'sizeUnit', 'status', 'createdAt', 'updatedAt'
         ])
         && request.resource.data.keys().hasOnly([
-          'ownerUid', 'name', 'location', 'size', 'sizeUnit', 'cropIds', 'status', 'createdAt', 'updatedAt'
+          'ownerUid', 'name', 'location', 'size', 'sizeUnit', 'cropIds',
+          'soilType', 'soilTexture', 'status', 'createdAt', 'updatedAt'
         ])
         && request.resource.data.ownerUid == request.auth.uid
         && validDisplayName(request.resource.data.name)
@@ -175,6 +235,8 @@ service cloud.firestore {
         && request.resource.data.size > 0
         && request.resource.data.sizeUnit in ['hectare', 'acre']
         && (!('cropIds' in request.resource.data) || request.resource.data.cropIds is list)
+        && validOptionalSoilText(request.resource.data, 'soilType')
+        && validOptionalSoilText(request.resource.data, 'soilTexture')
         && request.resource.data.status == 'active'
         && request.resource.data.createdAt == request.time
         && request.resource.data.updatedAt == request.time;
@@ -194,14 +256,59 @@ service cloud.firestore {
             resource.data.status == 'active'
             && request.resource.data.status in ['active', 'archived']
             && request.resource.data.diff(resource.data).affectedKeys()
-              .hasOnly(['name', 'location', 'size', 'sizeUnit', 'cropIds', 'status', 'updatedAt'])
+              .hasOnly([
+                'name', 'location', 'size', 'sizeUnit', 'cropIds', 'soilType',
+                'soilTexture', 'status', 'updatedAt'
+              ])
             && (!('cropIds' in request.resource.data) || request.resource.data.cropIds is list)
+            && validOptionalSoilText(request.resource.data, 'soilType')
+            && validOptionalSoilText(request.resource.data, 'soilTexture')
           )
           || (
             resource.data.status == 'archived'
             && request.resource.data.status == 'active'
             && request.resource.data.diff(resource.data).affectedKeys()
               .hasOnly(['status', 'updatedAt'])
+          )
+        );
+
+      allow delete: if false;
+    }
+
+    match /soilTests/{soilTestId} {
+      allow get, list: if activeAdmin()
+        || (activeFarmer() && resource.data.ownerUid == request.auth.uid)
+        || (activeExpert() && resource.data.assignedExpertUid == request.auth.uid);
+
+      allow create: if activeFarmer()
+        && validSoilTest(request.resource.data)
+        && request.resource.data.ownerUid == request.auth.uid
+        && activeOwnedFarm(request.resource.data.farmId)
+        && request.resource.data.testDate <= request.time
+        && request.resource.data.verificationStatus == 'unverified'
+        && !('reviewNotes' in request.resource.data)
+        && !('assignedExpertUid' in request.resource.data)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      allow update: if validSoilTest(request.resource.data)
+        && resource.data.createdAt == request.resource.data.createdAt
+        && request.resource.data.updatedAt == request.time
+        && (
+          (
+            activeAdmin()
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['assignedExpertUid', 'updatedAt'])
+            && (
+              request.resource.data.assignedExpertUid == null
+              || activeExpertUid(request.resource.data.assignedExpertUid)
+            )
+          )
+          || (
+            activeExpert()
+            && resource.data.assignedExpertUid == request.auth.uid
+            && request.resource.data.diff(resource.data).affectedKeys()
+              .hasOnly(['verificationStatus', 'reviewNotes', 'updatedAt'])
           )
         );
 

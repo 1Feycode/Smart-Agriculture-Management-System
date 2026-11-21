@@ -52,6 +52,19 @@ export async function listFarms(
   }
 }
 
+export async function listAllFarms(ownerUid: string, status: FarmStatus): Promise<Farm[]> {
+  const farms: Farm[] = []
+  let cursor: FarmPage['nextCursor'] = null
+
+  do {
+    const page = await listFarms(ownerUid, status, { cursor, sort: 'name' })
+    farms.push(...page.farms)
+    cursor = page.nextCursor
+  } while (cursor)
+
+  return farms
+}
+
 export async function countActiveFarms(ownerUid: string): Promise<number> {
   const services = await getFirebaseServices()
   const firestoreSdk = await import('firebase/firestore')
@@ -81,7 +94,7 @@ export async function createFarm(ownerUid: string, input: FarmInput): Promise<st
   const farm = await firestoreSdk.addDoc(
     firestoreSdk.collection(services.firestore, 'farms'),
     {
-      ...input,
+      ...compactFarmInput(input),
       ownerUid,
       status: 'active',
       createdAt: now,
@@ -96,7 +109,9 @@ export async function updateFarm(farmId: string, input: FarmInput): Promise<void
   const firestoreSdk = await import('firebase/firestore')
 
   await firestoreSdk.updateDoc(firestoreSdk.doc(services.firestore, 'farms', farmId), {
-    ...input,
+    ...compactFarmInput(input),
+    soilType: input.soilType?.trim() || firestoreSdk.deleteField(),
+    soilTexture: input.soilTexture?.trim() || firestoreSdk.deleteField(),
     updatedAt: firestoreSdk.serverTimestamp(),
   })
 }
@@ -114,7 +129,19 @@ export async function setFarmStatus(farmId: string, status: FarmStatus): Promise
 function parseFarm(value: unknown, id: string): Farm {
   if (!isRecord(value)) throw new Error('This farm record has an invalid format.')
 
-  const { ownerUid, name, location, size, sizeUnit, cropIds, status, createdAt, updatedAt } = value
+  const {
+    ownerUid,
+    name,
+    location,
+    size,
+    sizeUnit,
+    cropIds,
+    soilType,
+    soilTexture,
+    status,
+    createdAt,
+    updatedAt,
+  } = value
   if (
     typeof ownerUid !== 'string'
     || typeof name !== 'string'
@@ -125,6 +152,8 @@ function parseFarm(value: unknown, id: string): Farm {
     || !isFarmSizeUnit(sizeUnit)
     || (cropIds !== undefined
       && (!Array.isArray(cropIds) || !cropIds.every((cropId) => typeof cropId === 'string')))
+    || !isOptionalSoilText(soilType)
+    || !isOptionalSoilText(soilTexture)
     || (status !== 'active' && status !== 'archived')
     || !isTimestamp(createdAt)
     || !isTimestamp(updatedAt)
@@ -140,10 +169,31 @@ function parseFarm(value: unknown, id: string): Farm {
     size,
     sizeUnit,
     ...(Array.isArray(cropIds) ? { cropIds } : {}),
+    ...(typeof soilType === 'string' ? { soilType } : {}),
+    ...(typeof soilTexture === 'string' ? { soilTexture } : {}),
     status,
     createdAt,
     updatedAt,
   }
+}
+
+function compactFarmInput(input: FarmInput): Omit<FarmInput, 'soilType' | 'soilTexture'> & {
+  soilType?: string
+  soilTexture?: string
+} {
+  return {
+    name: input.name,
+    location: input.location,
+    size: input.size,
+    sizeUnit: input.sizeUnit,
+    ...(input.cropIds ? { cropIds: input.cropIds } : {}),
+    ...(input.soilType?.trim() ? { soilType: input.soilType.trim() } : {}),
+    ...(input.soilTexture?.trim() ? { soilTexture: input.soilTexture.trim() } : {}),
+  }
+}
+
+function isOptionalSoilText(value: unknown): value is string | undefined {
+  return value === undefined || (typeof value === 'string' && value.length <= 120)
 }
 
 function isAdministrativeLocation(value: unknown): value is AdministrativeLocation {

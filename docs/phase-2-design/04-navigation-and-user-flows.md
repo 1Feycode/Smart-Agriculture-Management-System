@@ -12,7 +12,7 @@ Route names below are proposed. Validate route access and account lifecycle agai
 | Farmer | Dashboard, Profile, Farms, Crops, Soil tests, Recommendations, Ask expert, Questions, Weather, Market prices, Notifications |
 | Expert | Dashboard, Question inbox, Recommendation review, Soil-record review, Profile, Notifications |
 | Data manager | Dashboard, Markets, Products, Market prices, Verification queue, Reports if explicitly authorized, Profile |
-| Administrator | Dashboard, Users, Roles, Crops, Fertilizers, Markets, Public content, Questions, Activity log, Reports, Profile |
+| Administrator | Dashboard, Users, Roles, Crops, Soil-test assignments, Fertilizers, Markets, Public content, Questions, Activity log, Reports, Profile |
 
 Do not expose every protected menu item to every role. Menu visibility and redirects are convenience features only.
 

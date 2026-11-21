@@ -3,6 +3,7 @@ import { DashboardLayout } from '../layouts/DashboardLayout'
 import { PublicLayout } from '../layouts/PublicLayout'
 import { AboutPage } from '../pages/AboutPage'
 import { AccountEntryPage } from '../pages/AccountEntryPage'
+import { AdminSoilTestsPage } from '../pages/AdminSoilTestsPage'
 import { AccessDeniedPage } from '../pages/AccessDeniedPage'
 import { CropCatalogPage } from '../pages/CropCatalogPage'
 import { CropDetailsPage } from '../pages/CropDetailsPage'
@@ -13,11 +14,15 @@ import { FarmDetailsPage } from '../pages/FarmDetailsPage'
 import { FarmFormPage } from '../pages/FarmFormPage'
 import { FarmListPage } from '../pages/FarmListPage'
 import { FarmerDashboardPage } from '../pages/FarmerDashboardPage'
+import { FarmerSoilTestsPage } from '../pages/FarmerSoilTestsPage'
 import { HomePage } from '../pages/HomePage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { ProfilePage } from '../pages/ProfilePage'
 import { PublicPlaceholderPage } from '../pages/PublicPlaceholderPage'
 import { RouteErrorPage } from '../pages/RouteErrorPage'
+import { ExpertSoilTestsPage } from '../pages/ExpertSoilTestsPage'
+import { SoilTestDetailsPage } from '../pages/SoilTestDetailsPage'
+import { SoilTestFormPage } from '../pages/SoilTestFormPage'
 import { SuperadminUsersPage } from '../pages/SuperadminUsersPage'
 import { ProtectedRoute } from './ProtectedRoute'
 
@@ -82,6 +87,9 @@ export const router = createBrowserRouter([
       { path: 'farms/:farmId/edit', element: <FarmFormPage /> },
       { path: 'farms/:farmId', element: <FarmDetailsPage /> },
       { path: 'crops', element: <CropCatalogPage embedded /> },
+      { path: 'soil-tests', element: <FarmerSoilTestsPage /> },
+      { path: 'soil-tests/new', element: <SoilTestFormPage /> },
+      { path: 'soil-tests/:soilTestId', element: <SoilTestDetailsPage /> },
       { path: '*', element: <DashboardPlaceholderPage role="farmer" /> },
     ],
   },
@@ -96,6 +104,8 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="dashboard" replace /> },
       { path: 'dashboard', element: <DashboardPlaceholderPage role="expert" /> },
+      { path: 'soil-tests', element: <ExpertSoilTestsPage /> },
+      { path: 'soil-tests/:soilTestId', element: <SoilTestDetailsPage /> },
       { path: '*', element: <DashboardPlaceholderPage role="expert" /> },
     ],
   },
@@ -127,6 +137,8 @@ export const router = createBrowserRouter([
       { path: 'crops', element: <CropManagementPage /> },
       { path: 'crops/new', element: <CropFormPage /> },
       { path: 'crops/:cropId/edit', element: <CropFormPage /> },
+      { path: 'soil-tests', element: <AdminSoilTestsPage /> },
+      { path: 'soil-tests/:soilTestId', element: <SoilTestDetailsPage /> },
       { path: '*', element: <DashboardPlaceholderPage role="admin" /> },
     ],
   },

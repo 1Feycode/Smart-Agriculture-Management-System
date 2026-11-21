@@ -118,6 +118,18 @@ export function FarmDetailsPage() {
           <div><dt>Last updated</dt><dd>{farm.updatedAt.toDate().toLocaleDateString()}</dd></div>
           <div><dt>Created</dt><dd>{farm.createdAt.toDate().toLocaleDateString()}</dd></div>
         </dl>
+        <section className="farm-details__soil-profile" aria-labelledby="farm-soil-profile-title">
+          <h2 id="farm-soil-profile-title">General soil information</h2>
+          <p>This farmer-reported profile is separate from dated soil-test records.</p>
+          {farm.soilType || farm.soilTexture ? (
+            <dl className="profile-details">
+              <div><dt>Soil type</dt><dd>{farm.soilType || 'Not recorded'}</dd></div>
+              <div><dt>Soil texture</dt><dd>{farm.soilTexture || 'Not recorded'}</dd></div>
+            </dl>
+          ) : (
+            <p>No general soil information has been recorded for this farm.</p>
+          )}
+        </section>
         <div className="profile-form__actions farm-details__actions">
           {farm.status === 'active' ? (
             <>
@@ -157,7 +169,7 @@ export function FarmDetailsPage() {
         <div className="farm-dashboard__section-heading">
           <div>
             <h2 id="farm-modules-title">Farm records and information</h2>
-            <p>Additional records will appear here when their approved modules are available.</p>
+            <p>Review soil information here; other records will appear as their modules become available.</p>
           </div>
         </div>
         <div className="farm-module-grid">
@@ -187,7 +199,13 @@ export function FarmDetailsPage() {
           </article>
           <article className="farm-module-card">
             <h3>Soil records</h3>
-            <p>Soil-test records are not available yet. No measurements are stored on this farm.</p>
+            <p>Review dated soil tests for this farm or record a new soil test.</p>
+            <div className="farm-card__actions">
+              <Link className="button button--secondary" to={`/farmer/soil-tests?farmId=${farm.id}`}>View soil-test history</Link>
+              {farm.status === 'active' && (
+                <Link className="button button--primary" to={`/farmer/soil-tests/new?farmId=${farm.id}`}>Add soil test</Link>
+              )}
+            </div>
           </article>
           <article className="farm-module-card">
             <h3>Fertilizer recommendations</h3>

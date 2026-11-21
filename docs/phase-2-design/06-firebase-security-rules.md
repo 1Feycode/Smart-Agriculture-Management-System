@@ -15,7 +15,7 @@ The rules below are a restrictive **design baseline**, not a production certific
 
 ### Current application rules scope
 
-The executable rules file at `sams-web/firestore.rules` implements farmer profile/location updates, superadmin-only user listing and role/status management, verified, active owner-farmer farm create/read/update/archive/reactivate operations, and admin-only crop/crop-category management. Public crop reads are limited to active, approved, published records; active categories are public. Staff farm inspection/archive access is not enabled. Profile, farm, crop, and category deletion remain denied; all other business collections remain denied. The larger rule set below remains a future design proposal and must not be copied into production without schema review, emulator coverage, and security approval.
+The executable rules file at `sams-web/firestore.rules` implements farmer profile/location updates, superadmin-only user listing and role/status management, verified active owner-farmer farm operations, and administrator-only crop/crop-category management. Soil-test access is owner-scoped for farmers, limited to assigned active experts for review, and available to active administrators for assignment. Farmers can create only unverified soil tests linked to their own active farms; they cannot change reviewer fields or delete tests. General farm soil fields remain farmer-owned. Crop and soil-test deletes remain denied; other business collections remain denied. The larger rule set below remains a future design proposal and must not be copied into production without schema review, emulator coverage, and security approval.
 
 ## Firestore Security Rules
 
@@ -183,45 +183,9 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // A farmer owns soil records through both ownerUid and the parent farm.
-    // Experts may review only explicitly assigned records; assignment is admin-controlled.
-    match /soilTests/{soilTestId} {
-      allow get, list: if signedIn() && (
-        admin()
-        || resource.data.ownerUid == request.auth.uid
-        || (expert() && resource.data.assignedExpertUid == request.auth.uid)
-      );
-      allow create: if farmer()
-        && request.resource.data.ownerUid == request.auth.uid
-        && ownedFarm(request.resource.data.farmId, request.auth.uid)
-        && onlyFields(['ownerUid', 'farmId', 'testDate', 'sourceType', 'sourceName', 'ph',
-          'nutrients', 'texture', 'soilType', 'verificationStatus', 'createdAt', 'updatedAt'])
-        && request.resource.data.verificationStatus == 'unverified'
-        && serverCreated();
-      allow update: if farmer()
-        && resource.data.ownerUid == request.auth.uid
-        && request.resource.data.ownerUid == resource.data.ownerUid
-        && request.resource.data.farmId == resource.data.farmId
-        && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['testDate', 'sourceType', 'sourceName', 'ph', 'nutrients', 'texture', 'soilType', 'updatedAt'])
-        && request.resource.data.updatedAt == request.time;
-      allow update: if expert()
-        && resource.data.assignedExpertUid == request.auth.uid
-        && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['verificationStatus', 'reviewNotes', 'updatedAt'])
-        && request.resource.data.ownerUid == resource.data.ownerUid
-        && request.resource.data.farmId == resource.data.farmId
-        && request.resource.data.updatedAt == request.time;
-      allow update: if admin()
-        && request.resource.data.ownerUid == resource.data.ownerUid
-        && request.resource.data.farmId == resource.data.farmId
-        && request.resource.data.createdAt == resource.data.createdAt
-        && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['assignedExpertUid', 'verificationStatus', 'reviewNotes', 'updatedAt'])
-        && request.resource.data.updatedAt == request.time;
-      allow delete: if false;
-    }
+    // Soil-test rules are intentionally omitted from this future-design baseline.
+    // Use sams-web/firestore.rules for the implemented Phase 5 ownership,
+    // admin-assignment, and assigned-expert review policy.
 
     // Public readers see only approved active reference data. Only administrators
     // maintain fertilizer records and rules. Draft rules never become public.

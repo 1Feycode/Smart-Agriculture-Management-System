@@ -59,7 +59,7 @@ The current free-tier application uses `users/{uid}.role` as its authorization s
 | Module | Flow | Enforcement and notes |
 | --- | --- | --- |
 | Registration/profile | React validates fields → Firebase Auth creates identity → profile initialization → farmer creates/updates own profile | Auth establishes UID. Initial client profile can have only the fixed farmer role/status; privileged roles are provisioned out-of-band. A partial failure must show recovery guidance, not report success. |
-| Farm management | Farmer form → Firestore `farms` create/update → owner-scoped query/list/detail | Rules require `ownerUid == request.auth.uid`; server timestamps; no client-changed owner. |
+| Farm management | Farmer form → Firestore `farms` create/update → owner-scoped query/list/detail | Rules require `ownerUid == request.auth.uid`; server timestamps; no client-changed owner. Optional general soil type/texture are farmer-reported text, not soil-test results. |
 | Crop catalog | Public query reads active/public crops; admin edits through restricted rule path | Public fields only; admin content change policy and soft-delete are stakeholder decisions. |
 | Soil test | Farmer selects owned farm → records dated measurements/source → expert reviews only an explicitly assigned record if approved | Missing numeric values remain absent/null, never coerced to zero. Preserve source/verification metadata. |
 | Fertilizer recommendation | Farmer submits linked farm/crop/soil IDs → rule/engine verifies inputs → expert reviews → farmer reads result/history | No unsupported rate. Use a privileged calculation only after expert-approved rules are specified; otherwise create a pending request and show no rate. |
